@@ -6,6 +6,7 @@
 #include <net/if.h> /* For index to dev name and back*/
 #include <errno.h>
 #include <sys/uio.h>
+#include <stdio.h>
 
 int main(int argc, char* argv[]){
 
@@ -30,7 +31,7 @@ int main(int argc, char* argv[]){
     // Going to attempt to request IP Address of Wlan0
     // Will require both receiving and requesting
     struct sockaddr_nl nladdr = {
-        .nl_family = AF_INET,
+        .nl_family = AF_NETLINK,
         .nl_pad = 0,
         .nl_pid = getpid(),
         .nl_groups = 0};
@@ -40,14 +41,17 @@ int main(int argc, char* argv[]){
         .msg_namelen = sizeof(nladdr),
         .msg_iov = &iov,
         .msg_iovlen = 1,
-        .msg__control = NULL,
+        .msg_control = NULL,
         .msg_controllen = 0,
         .msg_flags = 0};
     int fd, success, sequence_number = 1;
 
-    fd = socket(AF_NETLINK,SOCK_RAW,NETLINK_ROUTE);
+    if((fd = socket(AF_NETLINK,SOCK_RAW,NETLINK_ROUTE)) < 0){
+        perror("Error Opening Socket");
+        return errno;
+    }
     if((success =  bind(fd, (struct sockaddr *) &nladdr, sizeof(nladdr))) < 0){
-        printf("Error Binding to Socket\n");
+        perror("Error Binding to Socket");
         return errno;
     }
     nladdr.nl_pid = 0;
@@ -61,6 +65,7 @@ int main(int argc, char* argv[]){
     iov.iov_len = packet.nlh.nlmsg_len;
     sendmsg(fd,&msg,0);
     printf("Sent Message");
+    recvmsg(fd,&msg,0);
 
 
 
