@@ -8,6 +8,7 @@
 #include <sys/uio.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void print_msg_values(struct msghdr *);
 void printft(char *string, int tabs);
@@ -34,6 +35,10 @@ int main(int argc, char* argv[]){
         struct nlmsghdr nlh;
         struct ifaddrmsg addr;
    }packet;
+   struct {
+        struct nlmsghdr nlh;
+        struct ifaddrmsg addr;
+   } *received;
     // Going to attempt to request IP Address of Wlan0
     // Will require both receiving and requesting
     struct sockaddr_nl nladdr = {
@@ -50,7 +55,8 @@ int main(int argc, char* argv[]){
         .msg_control = NULL,
         .msg_controllen = 0,
         .msg_flags = 0};
-    int fd, success, sequence_number = 1;
+    int fd, success, sequence_number = 1,len;
+    unsigned char* buff;
     memset(&packet,0,sizeof(packet));
     if((fd = socket(AF_NETLINK,SOCK_RAW,NETLINK_ROUTE)) < 0){
         perror("Error Opening Socket");
@@ -74,10 +80,25 @@ int main(int argc, char* argv[]){
         perror("sendmsg(): ");
     }
     printf("Sent Message\n");
+
+    /* When we implement a function, add error handling*/
+    /* First need to peek at message, MSG_TRUNC does something special for
+        netlink message where it will return the length of the full message*/
+    len = recvmsg(fd,&msg,MSG_PEEK | MSG_TRUNC);
+    //print_msg_values(&msg);
+    buff = (unsigned char *) malloc(len);
+    msg.msg_iov->iov_base = buff;
+    msg.msg_iov->iov_len = len;
     recvmsg(fd,&msg,0);
-    print_msg_values(&msg);
-    recvmsg(fd,&msg,0);
-    print_msg_values(&msg);
+    //print_msg_values(&msg);
+    received = msg.msg_iov->iov_base;
+    printf("{nlmsghdr: \
+        \n\tnlmsg_len: %d\
+        \n\tnlmsg_type: %d\
+        \n\tnlmsg_flags: %d\
+        \n\tnlmsg_seq: %d\
+        \n\tnlmsg_pid: %d\n}\n",received->nlh.nlmsg_len,received->nlh.nlmsg_type,received->nlh.nlmsg_flags,received->nlh.nlmsg_seq,received->nlh.nlmsg_pid);
+
     return 0;
 }
 void print_msg_values(struct msghdr *msg){
@@ -100,6 +121,7 @@ void print_msg_values(struct msghdr *msg){
         }
     printf("\tmsg_iovlen: %d\n",msg->msg_iovlen);
     printf("\tmsg_iov: %p\n",msg->msg_iov);
+        printf("\t{iovec:\n\t\tiov_base: %p\n\t\tiov_len: %d\n\t}\n",msg->msg_iov->iov_base,msg->msg_iov->iov_len);
     printf("\tmsg_control: %p\n",msg->msg_control);
     printf("\tmsg_controllen: %d\n",msg->msg_controllen);
     printf("\tmsg_flags: \n");
@@ -180,7 +202,6 @@ void printft(char *string, int tabs){
     }
     printf(string);
 }
-
 void print_addrfamily(unsigned short family, int tabs){
     if(family == AF_UNSPEC){
         printft("AF_UNSPEC(Unspecified)\n",tabs);
