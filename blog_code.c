@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #include <linux/rtnetlink.h>
 
+// prints routing table
+
 int rtnl_receive(int fd, struct msghdr *msg, int flags)
 {
     int len;

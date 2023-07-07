@@ -26,11 +26,14 @@ int main(int argc, char* argv[]){
     NLMSG_LENGTH(sizeof(packet_specific_header)) - This calculates the length of nlmsgheader+ type header
         -This is used for an offset for placing the attributes
     NLMSG_ALIGN(len) - THis will give you the number of bytes in the message currently
-        - Add to the nlmsghdr to get where teh attribute should go
+        - Add to the nlmsghdr to get where the attribute should go
     RTA_DATA(*attrheader) - This calculates the offset from the attribute header to start the data
     RTA_LENGTH(len) - Calculates the total length including the header bytes. 
         - Typically used to update the nlmsghdr length after adding attributes
     */
+
+   /*------Segment out Packet Types to Functions-------------*/
+   /* For example, make route_table message                  */
    struct {
         struct nlmsghdr nlh;
         struct ifaddrmsg addr;
@@ -39,6 +42,10 @@ int main(int argc, char* argv[]){
         struct nlmsghdr nlh;
         struct ifaddrmsg addr;
    } *received;
+   /*---------------------------------------------------------*/
+
+
+    /* This is the socket address to send and receive messages*/
     // Going to attempt to request IP Address of Wlan0
     // Will require both receiving and requesting
     struct sockaddr_nl nladdr = {
@@ -46,6 +53,10 @@ int main(int argc, char* argv[]){
         .nl_pad = 0,
         .nl_pid = getpid(),
         .nl_groups = 0};
+
+
+
+    /* Segment out MSGHDR control to a function(Look at AODV-UU)*/
     struct iovec iov;
     struct msghdr msg= {
         .msg_name = &nladdr,
@@ -55,6 +66,12 @@ int main(int argc, char* argv[]){
         .msg_control = NULL,
         .msg_controllen = 0,
         .msg_flags = 0};
+    /*----------------------------------------------------*/
+
+
+    /*Will need a function to parse the attribute buffer after (again, AODV-UU)*/
+
+
     int fd, success, sequence_number = 1,len;
     unsigned char* buff;
     memset(&packet,0,sizeof(packet));
@@ -66,6 +83,8 @@ int main(int argc, char* argv[]){
         perror("Error Binding to Socket");
         return errno;
     }
+
+    // I shouldn't have overwritten and just should have made another address
     nladdr.nl_pid = 0;
     
     packet.nlh.nlmsg_type = RTM_GETADDR;
@@ -90,7 +109,7 @@ int main(int argc, char* argv[]){
     msg.msg_iov->iov_base = buff;
     msg.msg_iov->iov_len = len;
     recvmsg(fd,&msg,0);
-    //print_msg_values(&msg);
+    print_msg_values(&msg);
     received = msg.msg_iov->iov_base;
     printf("{nlmsghdr: \
         \n\tnlmsg_len: %d\
