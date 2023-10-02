@@ -26,7 +26,7 @@ void check(int val)
 	 * principles, but not for production environment
 	 */
 	if (val < 0) {
-		printf("check error: %s\n", strerror(errno));
+		printf("check error: %d\n", strerror(errno));
 		exit(1);
 	}
 }

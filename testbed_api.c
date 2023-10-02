@@ -24,6 +24,16 @@ Currently:
 #include <arpa/inet.h>          // for converting ip addresses to binary
 #include <net/if.h>             // for converting network interface names to binary
 
+#define BUFSIZE 4096
+
+#define for_each_nlmsg(n, buf, len)					\
+	for (n = (struct nlmsghdr*)buf;					\
+	     NLMSG_OK(n, (uint32_t)len) && n->nlmsg_type != NLMSG_DONE;	\
+	     n = NLMSG_NEXT(n, len))
+
+#define for_each_rattr(n, buf, len)					\
+	for (n = (struct rtattr*)buf; RTA_OK(n, len); n = RTA_NEXT(n, len))
+
 // ------------- Globals + Structures ------------------- //
 struct { // buffer to hold formed rtnetlink request
   struct nlmsghdr nl;
@@ -38,19 +48,11 @@ struct { // buffer to hold formed ifaddrmsg request (for getting ip address of i
 } ip_request;
 
 // for socket communications
-int fd;
-struct sockaddr_nl local_addr;
-struct sockaddr_nl pa;
-struct msghdr msg;
-struct iovec iov;
-int rtn;
+int fd; // global to hold socket
+//struct sockaddr_nl sa; // local address to bind fd
 
 // ----------------Variables for use with API (possibly edited by API user)-----------------
 // interface - what network interface to use API with
-
-// buffer to hold the RTNETLINK reply(s)
-char buf[8192];
-
 // RTNETLINK message ptrs and lengths for processing messages
 struct nlmsghdr *nl_ptr;
 int nl_len;
@@ -61,59 +63,42 @@ struct ipaddrmsg *ip_ptr;
 int ip_len;
 
 
-
-// Function Headers
-int add_route(int table, char * src_addr, char * dest_addr, int duration, int  flags);
-int del_route(int table, char * dest_addr);
-int del_route();
-int open_nl_socket();
-void form_add_request(char * src, char * dest, __u16 flags);
-void form_del_request(char * dest);
-void form_get_request();
-void send_request(int a);
-void recv_reply();
-void read_ip_reply();
-void get_my_ipv4();
 // void new routing table/ switch routing tables (seems to require opening and editing of /etc/iproute2/rt_tables)
 
-// -------------------- Main ----------------//
-int main (int argc, char *argv[])
-{
-    char dest[24] = "192.168.1.11"; // dummy ip
-    char src[24] = "192.168.1.8"; // needs to be local machine's ipv4 addr
-    open_nl_socket();
 
-    
-    //add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK);
-    get_my_ipv4();
-
-    //del_route(0, dest);
-    //send_unicast_message();
-
-    close(fd);
-}
 
 // --------------- API Functions ------------------- //
-/*  Creates an entry in the routing table 
-    table - the routing table to edit
-    src_addr - the source address for this entry (string)
-    dest_addr  - the destination address for this entry (string)
-    duration - defines a number of hops until the route is timed out (implementation with a stack?)
-    flags - defines route parameters (to be implemented)
-*/
-int add_route(int table, char * src_addr, char * dest_addr, int duration, int  flags)
+static inline int check(int val)
 {
-    // create rtnetlink message, send over socket
-    form_add_request(src_addr, dest_addr, flags);
-    send_request(1);
-    //recv_reply(); // currently only needed when getting routing table
-    //read_reply(); // currently only needed when getting routing table
+	if (val < 0) {
+		printf("check error: %s\n", strerror(errno));
+		exit(1);
+	}
+  else 
+    return val;
+}
+static inline char *ntop(int domain, void *buf)
+{
+	/*
+	 * this function is not thread safe
+	 */
+	static char ip[INET6_ADDRSTRLEN];
+	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
+	return ip;
+}
+
+int open_nl_socket(struct sockaddr_nl *sa) //opens and binds netlink socket to current process
+{
+    fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (fd < 0) {
+        perror("Failed to open netlink socket");
+        return -1;
+    }
+
+    bind(fd, (struct sockaddr*) sa, sizeof(*sa));
     return 0;
 }
-int del_route(int table, char * dest_addr)
-{
-    return 0;
-}
+
 
 // int send_broadcast_message(message * msg)
 // {
@@ -158,21 +143,6 @@ int send_unicast_message()
 
 // //int register_function_callback(int)
 
-//--------------------- HELPER FUNCTIONS ----------------------//
-int open_nl_socket() //opens and binds netlink socket to current process
-{
-    fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-    if (fd < 0) {
-        perror("Failed to open netlink socket");
-        return -1;
-    }
-
-    bzero(&local_addr, sizeof(local_addr));
-    local_addr.nl_family = AF_NETLINK;
-    local_addr.nl_pid = getpid();
-    bind(fd, (struct sockaddr*) &local_addr, sizeof(local_addr));
-    return 0;
-}
 
 void form_add_request(char * src, char * dest, __u16 flags) // form rtnetlink msg to add a route entry
 {
@@ -222,135 +192,134 @@ void form_add_request(char * src, char * dest, __u16 flags) // form rtnetlink ms
   rt_request.rt.rtm_dst_len = pn; // ?
 }
 
-void form_del_request(char * dest) // form rtnetlink msg to delete a route entry
+
+int get_ip(struct sockaddr_nl *sa, int domain) //only ipv4 for now, using globals fd and sa
 {
+  char buf[BUFSIZE];
+	memset(buf, 0, BUFSIZE);
+
+	// assemble message (nlmsghdr + ifaddrmsg)
+	struct nlmsghdr *nl;
+	nl = (struct nlmsghdr*)buf;
+	nl->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
+	nl->nlmsg_type = RTM_GETADDR;
+	nl->nlmsg_flags = NLM_F_REQUEST;
+
+	struct ifaddrmsg *ifa;
+	ifa = (struct ifaddrmsg*)NLMSG_DATA(nl);
+	ifa->ifa_family = domain; // we only get ipv4 address here
+
+	// prepare struct msghdr for sending.
+	struct iovec iov = { nl, nl->nlmsg_len };
+	struct msghdr msg = { sa, sizeof(*sa), &iov, 1, NULL, 0, 0 };
+
+	// send netlink message to kernel.
+	int r = sendmsg(fd, &msg, 0);
+	return (r < 0) ? -1 : 0;
 }
 
-void send_request(int a) // sends the current request through socket fd (global)
+static
+int get_msg(struct sockaddr_nl *sa, void *buf, size_t len)
 {
-  // create the remote address to communicate
-  bzero(&pa, sizeof(pa));
-  pa.nl_family = AF_NETLINK;
+  struct iovec iov;
+	struct msghdr msg;
+	iov.iov_base = buf;
+	iov.iov_len = len;
 
-  // initialize & create the struct msghdr for the sendmsg() function
-  bzero(&msg, sizeof(msg));
-  msg.msg_name = (void *) &pa;
-  msg.msg_namelen = sizeof(pa);
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = sa;
+	msg.msg_namelen = sizeof(*sa);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
 
-  // place the pointer & size of the message in msghdr
-  if(a)
-  { // rt message
-    iov.iov_base = (void *) &rt_request.nl;
-    iov.iov_len = rt_request.nl.nlmsg_len;
-  }
-  else
-  { // ip message
-    iov.iov_base = (void *) &ip_request.nl;
-    iov.iov_len = ip_request.nl.nlmsg_len;
-  }
-  msg.msg_iov = &iov;
-  msg.msg_iovlen = 1;
-
-  // send the RTNETLINK message to kernel (using socket API)
-  rtn = sendmsg(fd, &msg, 0);
+	return recvmsg(fd, &msg, 0);
 }
 
-void get_my_ipv4()
+int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len)
 {
-  // attributes of the route entry (interface index (wlan0) and network prefix size)
-  int interface = 3, pn = 16;
+	char ifname[IF_NAMESIZE];
+	printf("==================================\n");
+	printf("family:\t\t%d\n", (ifa->ifa_family == AF_INET) ? 4 :6);
+	printf("dev:\t\t%s\n", if_indextoname(ifa->ifa_index, ifname));
+	printf("prefix length:\t%d\n", ifa->ifa_prefixlen);
+	printf("\n");
 
-  // initialize RTNETLINK ip request buffer
-  bzero(&ip_request, sizeof(ip_request));
-  // compute the initial length of the RTNETLINK ip request
-  ip_len = sizeof(struct ifaddrmsg);
+	struct rtattr *rta = NULL;
+	int fa = ifa->ifa_family;
+	for_each_rattr(rta, buf, len) {
+		if (rta->rta_type == IFA_ADDRESS) {
+			printf("if address:\t%s\n", ntop(fa, RTA_DATA(rta)));
+		}
 
-    // setup the NETLINK header
-  ip_request.nl.nlmsg_len = NLMSG_LENGTH(ip_len);
-  //request.nl.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK;
-  ip_request.nl.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK; // function parameter
-  ip_request.nl.nlmsg_type = RTM_GETADDR;
+		if (rta->rta_type == IFA_LOCAL) {
+			printf("local address:\t%s\n", ntop(fa, RTA_DATA(rta)));
+		}
 
-  // setup the service header (struct ifaddrmsg)
-  ip_request.ip.ifa_family = AF_INET; // IPv4 protocol
-  ip_request.ip.ifa_prefixlen = pn; // 
-  ip_request.ip.ifa_flags = 0;
-  ip_request.ip.ifa_scope = 0; // ?
-  ip_request.ip.ifa_index = interface; // 
+		if (rta->rta_type == IFA_BROADCAST) {
+			printf("broadcast:\t%s\n", ntop(fa, RTA_DATA(rta)));
+		}
+	}
 
-  printf("sending");
-  send_request(0);
-  recv_reply();
-  read_ip_reply();
-
+	return 0;
 }
 
-// -------------- UNUSED FUNCTIONS --------------//
-void form_get_request() // forms netlink message to request routing table
+uint32_t parse_nl_msg(void *buf, size_t len)
 {
-  // initialize the request buffer (which is a global)
-  bzero(&rt_request, sizeof(rt_request));
+	struct nlmsghdr *nl = NULL;
+	for_each_nlmsg(nl, buf, len) {
+		if (nl->nlmsg_type == NLMSG_ERROR) {
+			printf("error");
+			return -1;
+		}
 
-  // set the NETLINK header
-  rt_request.nl.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
-  rt_request.nl.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
-  rt_request.nl.nlmsg_type = RTM_GETROUTE;
+		if (nl->nlmsg_type == RTM_NEWADDR) {
+			struct ifaddrmsg *ifa;
+			ifa = (struct ifaddrmsg*)NLMSG_DATA(nl);
+			parse_ifa_msg(ifa, IFA_RTA(ifa), IFA_PAYLOAD(nl));
+			continue;
+		}
 
-  // set the routing message header
-  rt_request.rt.rtm_family = AF_INET;
-  rt_request.rt.rtm_table = RT_TABLE_MAIN;
+
+	}
+	return nl->nlmsg_type;
 }
-void recv_reply() // receives netlink replies from kernel across socket fd
+
+
+// -------------------- Main ----------------//
+int main (int argc, char *argv[])
 {
-  char *p;
+    char dest[24] = "192.168.1.11"; // dummy ip
+    char src[24] = "192.168.1.8"; // needs to be local machine's ipv4 addr
+    //open_nl_socket();
 
-  // initialize the socket read buffer
-  bzero(buf, sizeof(buf));
+    int len = 0;
+    struct sockaddr_nl sa;
+	  memset(&sa, 0, sizeof(sa));
+	  sa.nl_family = AF_NETLINK;
+    open_nl_socket(&sa);
+	  check(fd);
 
-  p = buf;
-  nl_len = 0;
+      printf("asdf");
 
-  // read from the socket until the NLMSG_DONE is
-  // returned in the type of the RTNETLINK message
-  // or if it was a monitoring socket
-  while(1) {
-    rtn = recv(fd, p, sizeof(buf) - nl_len, 0);
+    len = get_ip(&sa, AF_INET); // To get ipv6, use AF_INET6 instead
+	  check(len);
 
-    nl_ptr = (struct nlmsghdr *) p;
 
-    if(nl_ptr->nlmsg_type == NLMSG_DONE)
-        break;
-    if(nl_ptr->nlmsg_type == NLMSG_ERROR)
-    {
-      struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(buf);
-        printf("%s\n", strerror(err->error)); 
-        exit(0); 
-    }
+    char buf[BUFSIZE];
+	  uint32_t nl_msg_type;
+	  do {
+		    len = get_msg(&sa, buf, BUFSIZE);
+		    check(len);
+		    nl_msg_type = parse_nl_msg(buf, len);
+	  } while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
 
-    // increment the buffer pointer to place next message
-    p += rtn;
+    //add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK);
+    //check(parse_ip());
 
-    // increment the total size by the size of
-    // the last received message
-    nl_len += rtn;
 
-    if((local_addr.nl_groups & RTMGRP_IPV4_ROUTE) == RTMGRP_IPV4_ROUTE) // ?
-      break;
-  }
-}
-void read_ip_reply() // uhh
-{
-  // outer loop: loops thru all the NETLINK
-  // headers that also include the route entry header
-  nl_ptr = (struct nlmsghdr *) buf;
-  printf("num: %d\n", NLMSG_OK(nl_ptr, nl_len));
-}
-int rtattr_add_addr(struct rtattr * rt_attr_ptr, int * rt_len, int type, int offset, char *addr) //Add a new rt attribute to the nlmsghdr n
-{
-  rt_attr_ptr->rta_type = type;
-  rt_attr_ptr->rta_len = sizeof(struct rtattr) + offset;
-  inet_pton(AF_INET, addr, ((char *)rt_attr_ptr) + sizeof(struct rtattr)); // place dest addr in buffer
-  rt_len += rt_attr_ptr->rta_len;
+    //del_route(0, dest);
+    //send_unicast_message();
 
-  return 0;
+    close(fd);
+    // memory leaks?
 }
