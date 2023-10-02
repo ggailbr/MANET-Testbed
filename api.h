@@ -108,4 +108,6 @@ uint32_t GetInterfaceIP(uint8_t *interace);
  */
 int SetInterface(uint8_t *interface);
 
+void InitializeApi();
+
 #endif
