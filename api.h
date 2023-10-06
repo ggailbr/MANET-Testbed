@@ -40,26 +40,26 @@ int fd = 0;
  * \brief Adds a unicast route from `src_address` to `dest_address` from the current
  * table selected
  * 
- * \param src_address The source address of the route
  * \param dest_address The destination address of the route
+ * \param next_hop The next hop of the 
  * 
  * \return The index of the routing entry added (-1 for failure)
  * 
 */
-int AddUnicastRoutingEntry(uint8_t *src_address, uint8_t *dest_address);
+int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop);
 /**
  * \brief Deletes a route in the current table. If src_address and dest_address are supplied, 
  * will delete the route based on those options. Otherwise, an index can be provided
  * instead to delete the route
  * 
- * \param src_address The source address of the route
  * \param dest_address The destination address of the route
+ * \param next_hop The next hop of the 
  * \param index The index of the route to delete
  * 
  * \return If the process was a success (-1 for failure)
  * 
 */
-int DeleteEntry(uint8_t *src_address, uint8_t *dest_address, int index);
+int DeleteEntry(uint32_t dest_address, uint32_t next_hop, int index);
 
 /** 
  * \brief Switch the current routing table to the table provided
@@ -80,7 +80,7 @@ int SwitchRoutingTable(uint8_t *table);
  * \return If operation of sending had no errors
  * 
  */
-int SendUnicast(uint8_t *dest_address, uint8_t *message_buffer, uint8_t *header);
+int SendUnicast(uint32_t dest_address, uint8_t *message_buffer, uint8_t *header);
 
 /**
  * \brief Sends a broadcast message to the interface broadcast IP address
