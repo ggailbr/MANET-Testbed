@@ -22,6 +22,7 @@ Header file for MANET Testbed API. Includes:
 #include <linux/rtnetlink.h>    // rtnetlink allows for modification of routing table
 #include <arpa/inet.h>          // for converting ip addresses to binary
 #include <net/if.h>             // for converting network interface names to binary
+#include <pthreads.h>
 
 #define BUFLEN		4096
 
