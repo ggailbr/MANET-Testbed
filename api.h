@@ -22,7 +22,7 @@ Header file for MANET Testbed API. Includes:
 #include <linux/rtnetlink.h>    // rtnetlink allows for modification of routing table
 #include <arpa/inet.h>          // for converting ip addresses to binary
 #include <net/if.h>             // for converting network interface names to binary
-#include <pthreads.h>
+#include <pthread.h>			// API should be thread-safe
 
 #define BUFLEN		4096
 
@@ -109,6 +109,11 @@ uint32_t GetInterfaceIP(uint8_t *interace);
  */
 int SetInterface(uint8_t *interface);
 
-void InitializeApi();
-
 #endif
+
+/* static inline char *ntop(int domain, void *buf) // convert ip to string
+{
+	static char ip[INET6_ADDRSTRLEN];
+	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
+	return ip;
+} */

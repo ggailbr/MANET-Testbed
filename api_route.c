@@ -159,7 +159,7 @@ static uint32_t parse_nl_msg(void *buf, size_t len)
 	return nl->nlmsg_type;
 }
 
-int AddUnicastRoutingEntry(uint8_t *src_address, uint32_t next_hop)
+int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop)
 {
 	pthread_mutex_lock(&lock);
 	

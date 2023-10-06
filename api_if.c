@@ -23,9 +23,9 @@ Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/ip_show.c
 
 #include "api.h"
 uint32_t * addr; // stores address to return
-uint32_t err = 0;
+uint32_t err = 0; // indicates error has occurred
 char  *interface_name = "wlan0";
-
+pthread_mutex_t lock;
 
 
 static inline void check(int val) // check for error returned
@@ -69,8 +69,7 @@ static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to
 	return (r < 0) ? -1 : 0;
 }
 
-static
-int get_msg(struct sockaddr_nl *sa, void *buf, size_t len)
+static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive message over socket
 {
 	struct iovec iov;
 	struct msghdr msg;
@@ -140,6 +139,7 @@ static uint32_t parse_nl_msg(void *buf, size_t len)
 
 uint32_t GetInterfaceIP(uint8_t *interface)
 {
+	pthread_mutex_lock(&lock);
 	int len = 0;
 	if(interface != NULL) // if bad input, use last inteface (wlan0 default)
 		interface_name = (char *)interface; 
@@ -162,16 +162,19 @@ uint32_t GetInterfaceIP(uint8_t *interface)
 
 		nl_msg_type = parse_nl_msg(buf, len);
 	} while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
+	pthread_mutex_unlock(&lock);
 
 	return *addr;
 }
+
+//int set Interface(uint8 *interface)
 
 int main(void)
 {
 	char *name = "eth0";
 
-	GetInterfaceIP((uint8_t *)name);
-	printf("%X\n", *addr);
+	int a = GetInterfaceIP((uint8_t *)name);
+	printf("%X\n", a);
 
 	if(err)
 		return -1;
