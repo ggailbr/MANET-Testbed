@@ -299,21 +299,8 @@ int main (int argc, char *argv[])
     open_nl_socket(&sa);
 	  check(fd);
 
-      printf("asdf");
 
-    len = get_ip(&sa, AF_INET); // To get ipv6, use AF_INET6 instead
-	  check(len);
-
-
-    char buf[BUFSIZE];
-	  uint32_t nl_msg_type;
-	  do {
-		    len = get_msg(&sa, buf, BUFSIZE);
-		    check(len);
-		    nl_msg_type = parse_nl_msg(buf, len);
-	  } while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
-
-    //add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK);
+    add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_ROOT);
     //check(parse_ip());
 
 
