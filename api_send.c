@@ -45,27 +45,31 @@ static inline void check(int val) // check for error returned
 	return recvmsg(fd, &msg, 0);
 } */
 
+static inline char *ntop(int domain, void *buf) // convert ip to string
+{
+	static char ip[INET6_ADDRSTRLEN];
+	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
+	return ip;
+}
+
 int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header)
 {
     if(!sock) // open dgram socket for udp, if there isn't one
         sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if(sock < 0) { printf("error opening socket"); exit(0); }
     
-    // bind socket
-    struct sockaddr_in sock_addr;
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons(2000); // ?
-    sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // loopback address
-    int r = bind(sock, (struct sockaddr *) &sock_addr, sizeof(sock_addr));
-    if(r < 0) { printf("error binding socket"); exit(0); }
+    // bind socket (unneccessary?)
+    struct sockaddr_in destination;
+    memset(&destination, 0, sizeof(struct sockaddr_in));
+    destination.sin_family = AF_INET;
+    inet_pton(AF_INET, ntop(AF_INET, &dest_address), &(destination.sin_addr));
+    destination.sin_port = htons(8888);
+
+    //int r = bind(sock, (struct sockaddr *) &sock_addr, sizeof(sock_addr));
+    //if(r < 0) { printf("error binding socket"); exit(0); }
 
     // send with sendto
-    struct sockaddr_in client;
-    int client_length = sizeof(client);
-    client.sin_family = AF_INET;
-    client.sin_port = htons(269); // ?
-    client.sin_addr.s_addr = dest_address;
-    r = sendto(sock, msg_buf, strlen((char *)msg_buf), 0, (struct sockaddr*) &client, (socklen_t) client_length);
+    int r = sendto(sock, msg_buf, strlen((char *)msg_buf), 0, (struct sockaddr*) &destination, sizeof(destination));
     if(r < 0) { printf("error sending: %d", errno); exit(0); }
 
     return r;

@@ -36,8 +36,8 @@ Header file for MANET Testbed API. Includes:
 
 // global variables
 int fd = 0; // netlink socket
-uint32_t local_ip = 0;
-uint32_t broadcast_ip = 0;
+uint32_t local_ip = 0; // node's ipv4 addr on wlan0
+uint32_t broadcast_ip = 0; // node's broadcast addr for current network
 
 /**
  * \brief Adds a unicast route to the current routing table. The route follows:
@@ -82,7 +82,7 @@ int SwitchRoutingTable(uint8_t *table);
  * \return If operation of sending had no errors
  * 
  */
-int SendUnicast(uint32_t dest_address, uint8_t *message_buffer, uint8_t *header);
+int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
 
 /**
  * \brief Sends a broadcast message to the interface broadcast IP address
@@ -110,11 +110,12 @@ uint32_t GetInterfaceIP(uint8_t *interace);
  */
 int SetInterface(uint8_t *interface);
 
+/**
+ * \brief Sets the interface for the protocol to that interface
+ * 
+ * \param interface The name of the interface to send packets on 
+ */
+int SetInterface(uint8_t *interface);
+
 #endif
 
-/* static inline char *ntop(int domain, void *buf) // convert ip to string
-{
-	static char ip[INET6_ADDRSTRLEN];
-	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
-	return ip;
-} */
