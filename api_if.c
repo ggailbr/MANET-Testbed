@@ -9,30 +9,17 @@ The basic API file for the MANET Testbed - to implement:
 Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/ip_show.c
 */
 
-/* #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <sys/socket.h>         // linux socket API
-#include <linux/netlink.h>      // netlink allows kernel<->userspace communications
-#include <linux/rtnetlink.h>    // rtnetlink allows for modification of routing table
-#include <arpa/inet.h>          // for converting ip addresses to binary
-#include <net/if.h>             // for converting network interface names to binary */
-
 #include "api.h"
 uint32_t * addr; // stores address to return
-uint32_t err = 0; // indicates error has occurred
-char  *interface_name = "wlan0";
+uint32_t f_err = 0; // indicates error has occurred
+char  *interface_name = "wlan0"; // wlan0 by default
 pthread_mutex_t lock;
-
 
 static inline void check(int val) // check for error returned
 {
 	if (val < 0) {
-		printf("check error: %s\n", strerror(errno));
-		exit(1);
+		//printf("check error: %s\n", strerror(errno));
+		f_err = 1;
 	}
 }
 
@@ -69,6 +56,7 @@ static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to
 	return (r < 0) ? -1 : 0;
 }
 
+// receive reply from kernel over netlink socket
 static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive message over socket
 {
 	struct iovec iov;
@@ -85,33 +73,17 @@ static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive mes
 	return recvmsg(fd, &msg, 0);
 }
 
+// interpret the ifa message(s) received from the kernel
 static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len)
 {
-	char ifname[IF_NAMESIZE];
 	if(ifa->ifa_index == if_nametoindex(interface_name)) {
-
-		printf("==================================\n");
-		printf("family:\t\t%d\n", (ifa->ifa_family == AF_INET) ? 4 :6);
-		printf("dev:\t\t%s\n", if_indextoname(ifa->ifa_index, ifname));
-		printf("prefix length:\t%d\n", ifa->ifa_prefixlen);
-		printf("index:\t%d\n", ifa->ifa_index);
-		printf("\n");
-
 		struct rtattr *rta = NULL;
-		int fa = ifa->ifa_family;
 		for_each_rattr(rta, buf, len) {
 			if (rta->rta_type == IFA_ADDRESS) {
-				printf("if address:\t%s\n", ntop(fa, RTA_DATA(rta)));
 				addr = (uint32_t  *)RTA_DATA(rta);
 			}
-
-			if (rta->rta_type == IFA_LOCAL) {
-				printf("local address:\t%s\n", ntop(fa, RTA_DATA(rta)));
-			}
-
-			if (rta->rta_type == IFA_BROADCAST) {
-				printf("broadcast:\t%s\n", ntop(fa, RTA_DATA(rta)));
-			}
+			else if (rta->rta_type == IFA_LOCAL) {}
+			else if (rta->rta_type == IFA_BROADCAST) {}
 		}
 	}
 
@@ -171,13 +143,11 @@ uint32_t GetInterfaceIP(uint8_t *interface)
 
 int main(void)
 {
-	char *name = "eth0";
+	char *name = "wlan0";
 
-	int a = GetInterfaceIP((uint8_t *)name);
-	printf("%X\n", a);
+	uint32_t a = GetInterfaceIP((uint8_t *)name);
+	printf("%s\n", ntop(AF_INET, &a));
 
-	if(err)
-		return -1;
-	else
-		return *addr;
+	return 0;
 }
+

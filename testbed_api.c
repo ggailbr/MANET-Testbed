@@ -300,12 +300,12 @@ int main (int argc, char *argv[])
 	  check(fd);
 
 
-    add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_ROOT);
+    //add_route(0, src, dest, 0, NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_ROOT);
     //check(parse_ip());
 
 
     //del_route(0, dest);
-    //send_unicast_message();
+    send_unicast_message();
 
     close(fd);
     // memory leaks?

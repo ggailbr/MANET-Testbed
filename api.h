@@ -34,33 +34,34 @@ Header file for MANET Testbed API. Includes:
 #define for_each_rattr(n, buf, len)					\
 	for (n = (struct rtattr*)buf; RTA_OK(n, len); n = RTA_NEXT(n, len))
 
-// global socket
-int fd = 0;
+// global variables
+int fd = 0; // netlink socket
+uint32_t local_ip = 0;
+uint32_t broadcast_ip = 0;
 
 /**
- * \brief Adds a unicast route from `src_address` to `dest_address` from the current
- * table selected
+ * \brief Adds a unicast route to the current routing table. The route follows:
+ * ip route add <dest_address> via <next_hop>
  * 
- * \param dest_address The destination address of the route
- * \param next_hop The next hop of the 
+ * \param dest_address The ultimate destination address of the route
+ * \param next_hop The next hop (next address to send to) of the route
  * 
- * \return The index of the routing entry added (-1 for failure)
+ * \return 1 for success, -1 for failure
  * 
 */
 int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop);
+
 /**
- * \brief Deletes a route in the current table. If src_address and dest_address are supplied, 
- * will delete the route based on those options. Otherwise, an index can be provided
- * instead to delete the route
+ * \brief Deletes a route in the current table. Only routes added by 
+ * AddUnicastRoutingEntry should be deleted using this function.
  * 
- * \param dest_address The destination address of the route
- * \param next_hop The next hop of the 
- * \param index The index of the route to delete
+ * \param dest_address The destination address of the route to delete
+ * \param next_hop The next hop (gateway) of the route to delete 
  * 
- * \return If the process was a success (-1 for failure)
+ * \return 1 for success, -1 for failure
  * 
 */
-int DeleteEntry(uint32_t dest_address, uint32_t next_hop, int index);
+int DeleteEntry(uint32_t dest_address, uint32_t next_hop);
 
 /** 
  * \brief Switch the current routing table to the table provided
