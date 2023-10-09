@@ -92,7 +92,7 @@ int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
  * 
  * \return If operation of sending had no errors
  */
-int SendBroadcast(uint8_t *message_buffer, uint8_t *header);
+int SendBroadcast(uint8_t *msg_buf, uint8_t *header);
 
 /**
  * \brief Gets the IP address associated with this interface
@@ -101,7 +101,7 @@ int SendBroadcast(uint8_t *message_buffer, uint8_t *header);
  * 
  * \return The IP address of the interface or -1 for failure
  */
-uint32_t GetInterfaceIP(uint8_t *interace);
+uint32_t GetInterfaceIP(uint8_t *interface);
 
 /**
  * \brief Sets the interface for the protocol to that interface
