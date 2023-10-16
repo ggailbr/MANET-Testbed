@@ -89,6 +89,11 @@ int SendBroadcast(uint8_t *msg_buf, uint8_t *header)
 	return send_sock_msg(0, msg_buf, header, 1);
 }
 
+int InitializeSend()
+{
+	// fork+execve to run api_shell.sh
+}
+
 int main(void)
 {
 	char *dest = "192.168.1.8";

@@ -39,6 +39,30 @@ int fd = 0; // netlink socket
 uint32_t local_ip = 0; // node's ipv4 addr on wlan0
 uint32_t broadcast_ip = 0; // node's broadcast addr for current network
 
+// INITIALIZATION
+/**
+ * \brief Initializes functions related to interfaces. All sets local_ip 
+ * and broadcast_ip for current node
+ * 
+ * \return 1 for success, -1 for failure
+*/
+int InitializeIF();
+
+/**
+ * \brief Initializes functions related to modifying routes. (unneeded?)
+ * 
+ * \return 1 for success, -1 for failure
+*/
+int InitializeRoute();
+
+/**
+ * \brief Initializes functions related to sending UDP messages. Also runs bash
+ * script to set up iptables rules.
+ * 
+ * \return 1 for success, -1 for failure
+*/
+int InitializeSend();
+
 /**
  * \brief Adds a unicast route to the current routing table. The route follows:
  * ip route add <dest_address> via <next_hop>
@@ -95,16 +119,17 @@ int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
 int SendBroadcast(uint8_t *msg_buf, uint8_t *header);
 
 /**
- * \brief Gets the IP address associated with this interface
+ * \brief Gets the desired IP address associated with the given interface
  * 
  * \param interface The name of the interface to get the IP address
+ * \param type The type of ip address to get (0 - default, 1 - broadcast)
  * 
  * \return The IP address of the interface or -1 for failure
  */
-uint32_t GetInterfaceIP(uint8_t *interface);
+uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type);
 
 /**
- * \brief Sets the interface for the protocol to that interface
+ * \brief Sets the interface for the protocol to that interface (likely unneeded)
  * 
  * \param interface The name of the interface to send packets on 
  */
