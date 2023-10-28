@@ -20,9 +20,9 @@ uint32_t broadcast_ip = 0;
 
 int InitializeAPI() // required to be called first
 {
-	f_err = f_err || InitializeIF();
-	f_err = f_err || InitializeSend();
-	f_err = f_err || InitializeRoute();
+	check(InitializeIF());
+	check(InitializeRoute());
+	check(InitializeSend());
 	if(f_err != 0)
 		return -1;
 	return 0;

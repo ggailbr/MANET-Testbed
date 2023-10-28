@@ -52,3 +52,9 @@ Mkfile.old
 dkms.conf
 .vs
 .vscode
+
+# Custom unneeded files
+test.c
+*html/*
+*latex/*
+Doxyfile

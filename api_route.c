@@ -13,12 +13,6 @@ Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/gateway_add
 #include "api.h"
 #include "api_route.h"
 
-struct rt_request{ // buffer to hold formed rtnetlink request
-  struct nlmsghdr nl;
-  struct rtmsg    rt;
-  char            buf[BUFLEN];
-};
-
 // forms and sends netlink message to add route (dest ip, gateway ip, interface)
 static int form_request(struct sockaddr_nl *sa, int domain, uint32_t dest, uint32_t nexthop, uint8_t action)
 {
@@ -29,7 +23,6 @@ static int form_request(struct sockaddr_nl *sa, int domain, uint32_t dest, uint3
 ;	int interface = 3; // indicates wlan0
 
 	// setup netlink header
-	//req.nl.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
 	req.nl.nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK | NLM_F_REPLACE | NLM_F_CREATE | NLM_F_ROOT;
 	req.nl.nlmsg_type = action;
 
@@ -51,15 +44,15 @@ static int form_request(struct sockaddr_nl *sa, int domain, uint32_t dest, uint3
 
 	// set up second attribute (interface)
 	rta = (struct rtattr *) (((char *)rta) + rta->rta_len);
-  	rta->rta_type = RTA_OIF; // indicates interface attribute
+  	rta->rta_type = RTA_OIF;
   	rta->rta_len = RTA_LENGTH(sizeof(int));
   	memcpy(RTA_DATA(rta), &interface, sizeof(int));
  	rt_len += rta->rta_len; // now rt_len is size of rt_msg_hdr + all attributes
-	req.nl.nlmsg_len = NLMSG_LENGTH(rt_len); // final update of nlmsg length
+	req.nl.nlmsg_len = NLMSG_LENGTH(rt_len);
 
 	// set up third attribute (gateway)
 	rta = (struct rtattr*) (((char *)rta) + rta->rta_len);
-  	rta->rta_type = RTA_GATEWAY; // indicates gateway attribute
+  	rta->rta_type = RTA_GATEWAY;
   	rta->rta_len = RTA_LENGTH(sizeof(uint32_t));
   	memcpy(RTA_DATA(rta), &nexthop, sizeof(uint32_t));
  	rt_len += rta->rta_len; // now rt_len is size of rt_msg_hdr + all attributes
@@ -105,17 +98,13 @@ static uint32_t parse_nl_msg(void *buf, size_t len)
 int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop)
 {
 	pthread_mutex_lock(&lock);
-	
 	int len = 0;
-	if(!fd) {  // create socket if it hasn't been made
-		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-		check(fd); }
 
 	struct sockaddr_nl sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.nl_family = AF_NETLINK; // for now, only ipv4 support
 
-	len = form_request(&sa, AF_INET, dest_address, next_hop, RTM_NEWROUTE); // To get ipv6, use AF_INET6 instead
+	len = form_request(&sa, AF_INET, dest_address, next_hop, RTM_NEWROUTE);
 	check(len);
 
 	// after sending, we need to check the result
@@ -129,30 +118,24 @@ int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop)
 		struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(buf);
 		switch (err->error) {
 		case 0:
-			//printf("Success\n");
 			break;
-		default:
-			//printf("NL message error: %s\n", strerror(err->error));
+		default: // any error in nlmsg goes here
 			f_err = 1;
 		}
 	}
 
 	pthread_mutex_unlock(&lock);
-	return (f_err != 0) ? -1 : 1;
+	return (f_err == 0) ? 0 : -1;
 }
 
 int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 {
 	pthread_mutex_lock(&lock);
-	
 	int len = 0;
-	if(!fd) {  // create socket if it hasn't been made
-		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-		check(fd); }
 
 	struct sockaddr_nl sa;
 	memset(&sa, 0, sizeof(sa));
-	sa.nl_family = AF_NETLINK; // for now, only ipv4 support
+	sa.nl_family = AF_NETLINK; // only supports ipv4
 
 	len = form_request(&sa, AF_INET, dest_address, next_hop, RTM_DELROUTE); // To get ipv6, use AF_INET6 instead
 	check(len);
@@ -168,19 +151,18 @@ int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 		struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(buf);
 		switch (err->error) {
 		case 0:
-			//printf("Success\n");
 			break;
-		default:
-			//printf("NL message error: %s\n", strerror(err->error));
+		default: // any error in nlmsg goes here
 			f_err = 1;
 		}
 	}
 
 	pthread_mutex_unlock(&lock);
-	return (f_err != 0) ? -1 : 1;
+	return (f_err == 0) ? 0 : -1;
 }
 
 int InitializeRoute()
 {
+	//printf("route initialized\n");
 	return 0;
 }

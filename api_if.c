@@ -72,8 +72,10 @@ static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t t
 			}
 		}
 	}
+	else if (if_nametoindex(interface_name) == 0)
+		f_err = -1;
 
-	return 0;
+	return f_err;
 }
 
 static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type)
@@ -81,7 +83,7 @@ static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type)
 	struct nlmsghdr *nl = NULL;
 	for_each_nlmsg(nl, buf, len) {
 		if (nl->nlmsg_type == NLMSG_ERROR) {
-			printf("error");
+			f_err = -1;
 			return -1;
 		}
 
@@ -101,13 +103,12 @@ uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type)
 	int len = 0;
 	if(interface != NULL) // if bad input, use last inteface (wlan0 default)
 		interface_name = (char *)interface; 
-	check(fd);
 
 	struct sockaddr_nl sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.nl_family = AF_NETLINK;
 
-	len = get_ip(&sa, AF_INET); // To get ipv6, use AF_INET6 instead
+	len = get_ip(&sa, AF_INET);
 	check(len);
 
 	char buf[BUFLEN];
@@ -120,7 +121,7 @@ uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type)
 	} while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
 	pthread_mutex_unlock(&lock);
 
-	return *addr;
+	return (f_err != 0) ? -1 : *addr;
 }
 
 int InitializeIF()
@@ -130,10 +131,11 @@ int InitializeIF()
 		check(fd); }
 	local_ip = GetInterfaceIP(NULL, 0);
 	broadcast_ip = GetInterfaceIP(NULL, 1);
-
-	if(local_ip == 0 || broadcast_ip == 0)
+	
+	if(local_ip == 0 || broadcast_ip == 0 || f_err != 0)
 		return -1;
 	else
-		return 1;
+		return 0;
+
 }
 

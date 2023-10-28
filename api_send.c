@@ -22,36 +22,39 @@ int send_sock_msg(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header, int 
 		int ret=setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)); // grant broadcast socket permissions
 		check(ret);
 	}
-    if(sock < 0) { printf("error opening socket"); exit(0); }
     
 	// initalize socket address and send
     struct sockaddr_in destination;
     memset(&destination, 0, sizeof(struct sockaddr_in));
     destination.sin_family = AF_INET;
-	if(type)
-    	inet_pton(AF_INET, "192.168.1.255", &(destination.sin_addr)); // broadcast
-	else
-		inet_pton(AF_INET, ntop(AF_INET, &dest_address), &(destination.sin_addr)); // unicast
+	if(type) // sending a broadcast msg
+    	inet_pton(AF_INET, "192.168.1.255", &(destination.sin_addr));
+	else // sending a unicast msg
+		inet_pton(AF_INET, ntop(AF_INET, &dest_address), &(destination.sin_addr));
     destination.sin_port = htons(269); // standard port for MANET comms
 
     int r = sendto(sock, msg_buf, strlen((char *)msg_buf), 0, (struct sockaddr*) &destination, sizeof(destination));
-    if(r < 0) { printf("error sending: %d", errno); exit(0); }
-
+    if(r < 0 || f_err != 0)
+		return -1;
     return r;
 }
 
 int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header)
 {
-	return send_sock_msg(dest_address, msg_buf, header, 0);
+	int r = send_sock_msg(dest_address, msg_buf, header, 0);
+	return (r < 0) ? -1 : 0;
 }
 
 int SendBroadcast(uint8_t *msg_buf, uint8_t *header)
 {
-	return send_sock_msg(0, msg_buf, header, 1);
+	int r = send_sock_msg(0, msg_buf, header, 1);
+	return (r < 0) ? -1 : 0;
 }
 
 int InitializeSend()
 {
-	// fork+execve to run api_shell.sh
-	return 0;
+	int r = system("sudo ./api_shell.sh");
+	//system("/sbin/iptables -F"); // delete current iptables rules
+	//system("sudo /sbin/iptables -A INPUT -p UDP --sport 269 --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
+	return (r < 0) ? -1 : 0;
 }

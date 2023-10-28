@@ -14,6 +14,12 @@
 #include <net/if.h>             // for converting network interface names to binary
 #include <pthread.h>			// API should be thread-safe
 
+struct rt_request{ // buffer to hold formed rtnetlink request
+  struct nlmsghdr nl;
+  struct rtmsg    rt;
+  char            buf[BUFLEN];
+};
+
 /**
  * \brief Initializes functions related to modifying routes. Currently unused.
  * 

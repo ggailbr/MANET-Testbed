@@ -18,7 +18,7 @@ send: api_send.c
 	$(CC) $(CFLAGS) api_send.c -o api_send.o
 
 api: api.c
-	$(CC) $(CFLAGS) api.c -o api.out
+	$(CC) $(CFLAGS) api.c -o api.o
 
 test: test.c
 	$(CC) -Wall test.c -o test.out -ltestbed $(LIBPATH)

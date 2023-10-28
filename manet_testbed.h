@@ -40,7 +40,7 @@ int InitializeAPI();
  * \param dest_address The ultimate destination address of the route
  * \param next_hop The next hop (next address to send to) of the route
  * 
- * \return 1 for success, -1 for failure
+ * \return 0 for success, -1 for failure
  * 
 */
 int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop);
@@ -52,13 +52,13 @@ int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop);
  * \param dest_address The destination address of the route to delete
  * \param next_hop The next hop (gateway) of the route to delete 
  * 
- * \return 1 for success, -1 for failure
+ * \return 0 for success, -1 for failure
  * 
 */
 int DeleteEntry(uint32_t dest_address, uint32_t next_hop);
 
 /** 
- * \brief Switch the current routing table to the table provided
+ * \brief Switch the current routing table to the table provided (currently unused)
  * 
  * \param label The label of the table to switch to or create
  * 
@@ -73,7 +73,7 @@ int SwitchRoutingTable(uint8_t *table);
  * \param[in] message_buffer The buffer to send in the packet (CRC calculated internally)
  * \param[in] header Optionally overwrite the header of the packet
  * 
- * \return If operation of sending had no errors
+ * \return 0 for success, -1 for failure
  * 
  */
 int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
@@ -84,7 +84,7 @@ int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
  * \param[in] message_buffer The buffer to send in the packet (CRC calculated internally)
  * \param[in] header Optionally overwrite the header of the packet
  * 
- * \return If operation of sending had no errors
+ * \return 0 for success, -1 for failure
  */
 int SendBroadcast(uint8_t *msg_buf, uint8_t *header);
 
@@ -99,11 +99,19 @@ int SendBroadcast(uint8_t *msg_buf, uint8_t *header);
 uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type);
 
 /**
- * \brief Sets the interface for the protocol to that interface (likely unneeded)
+ * \brief Sets the interface for the protocol to that interface (currently unused)
  * 
  * \param interface The name of the interface to send packets on 
  */
 int SetInterface(uint8_t *interface);
+
+/**
+ * Planned to-do
+ * \brief Search the routing table for a specific entry
+ * 
+ * \param entry the entry to search for
+ */
+int SearchTable(uint8_t *entry);
 
 #endif
 

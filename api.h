@@ -35,8 +35,8 @@ Internal header file for MANET Testbed. Includes:
 	for (n = (struct rtattr*)buf; RTA_OK(n, len); n = RTA_NEXT(n, len))
 
 // global variables
-extern int fd; 
-extern int f_err; // netlink socket
+extern int fd; // netlink socket
+extern int f_err;
 extern uint32_t local_ip; // node's ipv4 addr on wlan0
 extern uint32_t broadcast_ip; // node's broadcast addr for current network
 pthread_mutex_t lock; // providing thread safety
