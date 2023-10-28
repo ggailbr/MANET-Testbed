@@ -11,24 +11,13 @@ Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/gateway_add
 */
 
 #include "api.h"
-
-uint32_t f_err = 0; // indicates error has occurred
-pthread_mutex_t lock;
+#include "api_route.h"
 
 struct rt_request{ // buffer to hold formed rtnetlink request
   struct nlmsghdr nl;
   struct rtmsg    rt;
   char            buf[BUFLEN];
 };
-
-
-static inline void check(int val) // check for error returned
-{
-	if (val < 0) {
-		//printf("check error: %s\n", strerror(errno));
-		f_err = 1;
-	}
-}
 
 // forms and sends netlink message to add route (dest ip, gateway ip, interface)
 static int form_request(struct sockaddr_nl *sa, int domain, uint32_t dest, uint32_t nexthop, uint8_t action)
@@ -191,16 +180,7 @@ int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 	return (f_err != 0) ? -1 : 1;
 }
 
-// int SwitchRoutingTable(uint8_t *table)
-
-int main(void) // testing purposes only
+int InitializeRoute()
 {
-	char *dest = "192.168.1.11";
-	char *nexthop = "192.168.1.15";
-
-	//AddUnicastRoutingEntry(inet_addr(dest), inet_addr(nexthop));
-
-	DeleteEntry(inet_addr(dest), inet_addr(nexthop));
-
 	return 0;
 }

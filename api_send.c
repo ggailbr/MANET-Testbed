@@ -9,48 +9,9 @@ The basic API file for the MANET Testbed - to implement:
 */
 
 #include "api.h"
+#include "api_send.h"
 
-uint32_t f_err = 0; // indicates error has occurred
 int sock = 0;
-pthread_mutex_t lock;
-
-static inline void check(int val) // check for error returned
-{
-	if (val < 0) {
-		//printf("check error: %s\n", strerror(errno));
-		f_err = 1;
-	}
-}
-
-/* static inline char *ntop(int domain, void *buf) // convert ip to string
-{
-	static char ip[INET6_ADDRSTRLEN];
-	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
-	return ip;
-} */
-
-/* static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive message over socket
-{
-	struct iovec iov;
-	struct msghdr msg;
-	iov.iov_base = buf;
-	iov.iov_len = len;
-
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_name = sa;
-	msg.msg_namelen = sizeof(*sa);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-
-	return recvmsg(fd, &msg, 0);
-} */
-
-static inline char *ntop(int domain, void *buf) // convert ip to string
-{
-	static char ip[INET6_ADDRSTRLEN];
-	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
-	return ip;
-}
 
 int send_sock_msg(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header, int type)
 {
@@ -92,16 +53,5 @@ int SendBroadcast(uint8_t *msg_buf, uint8_t *header)
 int InitializeSend()
 {
 	// fork+execve to run api_shell.sh
-}
-
-int main(void)
-{
-	char *dest = "192.168.1.8";
-	char *nexthop = "192.168.1.15";
-
-    uint8_t* msg = (uint8_t *)"test message";
-
-    //SendUnicast(inet_addr(dest), msg, (uint8_t *) nexthop);
-	//SendBroadcast(msg, (uint8_t *) nexthop);
 	return 0;
 }

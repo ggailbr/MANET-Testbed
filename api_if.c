@@ -1,6 +1,6 @@
 /*
 Andre Koka - Created 9/28/2023
-             Last Updated: 10/16/2023
+             Last Updated: 10/27/2023
 
 The basic API file for the MANET Testbed - to implement:
 - GetInterfaceIP - retrieve ipv4 of an interface given its index
@@ -10,27 +10,10 @@ Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/ip_show.c
 */
 
 #include "api.h"
+#include "api_if.h"
 
 uint32_t * addr; // stores address to return
-uint32_t f_err = 0; // indicates error has occurred
 char  *interface_name = "wlan0"; // wlan0 by default
-pthread_mutex_t lock;
-
-static inline void check(int val) // check for error returned
-{
-	if (val < 0) {
-		//printf("check error: %s\n", strerror(errno));
-		f_err = 1;
-	}
-}
-
-/* static inline char *ntop(int domain, void *buf) // convert ip to string
-{
-	static char ip[INET6_ADDRSTRLEN];
-	inet_ntop(domain, buf, ip, INET6_ADDRSTRLEN);
-	return ip;
-} */
-
 
 static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to get ip
 {
@@ -152,16 +135,5 @@ int InitializeIF()
 		return -1;
 	else
 		return 1;
-}
-
-int main(void)
-{
-	char *name = "wlan0";
-
-	//uint32_t a = GetInterfaceIP((uint8_t *)name, 0);
-	InitializeIF();
-	//printf("%s\n", ntop(AF_INET, &broadcast_ip));
-
-	return 0;
 }
 
