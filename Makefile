@@ -1,12 +1,21 @@
 CC=gcc
 CFLAGS = -Wall -c -fpic
-DEPS = api.h
-LIBPATH = -L/home/pi/Documents/MANET-Testbed/
+SRC := src
+OBJ := obj
+HEAD := head
+SOURCES = $(wildcard $(SRC)/*.c)
+OBJECTS = $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
+LIBPATH = -L/home/pi/Documents/MANET-Testbed
 
-testbed: if route send api api_if.o api_route.o api_send.o api.o
-	$(CC) -shared -Wall api_if.o api_route.o api_send.o api.o -o libtestbed.so
+all: testbed
+
+testbed: $(OBJECTS)
+	$(CC) -shared -Wall $(OBJ)/*.o -o libtestbed.so
 	make test
 	make clean
+
+$(OBJ)/%.o: $(SRC)/%.c
+	$(CC) -I$(HEAD) -c $< -o $@
 
 if: api_if.c
 	$(CC) $(CFLAGS) api_if.c -o api_if.o
@@ -32,8 +41,8 @@ test: test.c
 .random_git_code.out: random_git_code.c
 	gcc -Wall random_git_code.c -o random_git_code.out
 
+queue: libnetfilter_queue_example.c
+	gcc -Wall libnetfilter_queue_example.c -lnfnetlink -lnetfilter_queue -o a.out
+
 clean:
-	rm -f api_if.o
-	rm -f api_route.o
-	rm -f api_send.o
-	rm -f api.o
+	rm -f $(OBJ)/*.o

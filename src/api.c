@@ -6,7 +6,7 @@ The basic API file for the MANET Testbed - to implement:
 - all common functions between other API files
 */
 
-#include "manet_testbed.h"
+#include "../manet_testbed.h"
 #include "api.h"
 #include "api_if.h"
 #include "api_send.h"

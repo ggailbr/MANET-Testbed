@@ -54,7 +54,9 @@ dkms.conf
 .vscode
 
 # Custom unneeded files
-test.c
+Examples/test.c
+obj/*.o
+OtherAPI
 *html/*
 *latex/*
 Doxyfile

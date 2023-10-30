@@ -113,5 +113,35 @@ int SetInterface(uint8_t *interface);
  */
 int SearchTable(uint8_t *entry);
 
+/**
+ * \brief Gets the desired IP address associated with the given interface
+ * 
+ * \param interface The name of the interface to get the IP address
+ * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * 
+ * \return The IP address of the interface or -1 for failure
+ */
+uint32_t QueueIncoming(uint8_t *interface, uint8_t type);
+
+/**
+ * \brief Gets the desired IP address associated with the given interface
+ * 
+ * \param interface The name of the interface to get the IP address
+ * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * 
+ * \return The IP address of the interface or -1 for failure
+ */
+uint32_t QueueForwarding(uint8_t *interface, uint8_t type);
+
+/**
+ * \brief Gets the desired IP address associated with the given interface
+ * 
+ * \param interface The name of the interface to get the IP address
+ * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * 
+ * \return The IP address of the interface or -1 for failure
+ */
+uint32_t QueueOutgoing(uint8_t *interface, uint8_t type);
+
 #endif
 
