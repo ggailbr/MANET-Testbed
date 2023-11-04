@@ -11,6 +11,7 @@ The basic API file for the MANET Testbed - to implement:
 #include "api_if.h"
 #include "api_send.h"
 #include "api_route.h"
+#include "api_queue.h"
 
 pthread_mutex_t lock;
 int fd = 0;
@@ -23,6 +24,7 @@ int InitializeAPI() // required to be called first
 	check(InitializeIF());
 	check(InitializeRoute());
 	check(InitializeSend());
+	check(InitializeQueue());
 	if(f_err != 0)
 		return -1;
 	return 0;

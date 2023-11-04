@@ -74,6 +74,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
 	ph = nfq_get_msg_packet_hdr(nfa);	
 	id = ntohl(ph->packet_id);
 	printf("entering callback\n");
+	print_pkt(nfa);
 	return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 

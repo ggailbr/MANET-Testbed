@@ -20,9 +20,16 @@ Header file for MANET Testbed API. Includes:
 #include <sys/socket.h>         // linux socket API
 #include <linux/netlink.h>      // netlink allows kernel<->userspace communications
 #include <linux/rtnetlink.h>    // rtnetlink allows for modification of routing table
-#include <arpa/inet.h>          // for converting ip addresses to binary
-#include <net/if.h>             // for converting network interface names to binary
-#include <pthread.h>			// API should be thread-safe
+#include <arpa/inet.h>          // definitions of internet operations
+#include <net/if.h>             // for managing network interfaces
+#include <pthread.h>
+#include <linux/netfilter.h>
+#include <libnetfilter_queue/libnetfilter_queue.h>
+
+#define PACKET_ACCEPT 1
+#define PACKET_DROP 0
+
+typedef uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length); 
 
 /**
  * \brief Initializes structures for the MANET Testbed. Required to be called first
@@ -114,34 +121,40 @@ int SetInterface(uint8_t *interface);
 int SearchTable(uint8_t *entry);
 
 /**
- * \brief Gets the desired IP address associated with the given interface
+ * \brief Registers the provided function as callback function for handling queued incoming packets, and
+ *        begins queueing incoming packets
  * 
- * \param interface The name of the interface to get the IP address
- * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * \param cb Pointer to the desired callback function, which should have the form:
+ *   *       - uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length);
+ *           - function should return PACKET_ACCEPT or PACKET_DROP to indicate verdict
  * 
- * \return The IP address of the interface or -1 for failure
+ * \return 0 for success, -1 for failure
  */
-uint32_t QueueIncoming(uint8_t *interface, uint8_t type);
+uint32_t RegisterIncomingCallback(CallbackFunction cb);
 
 /**
- * \brief Gets the desired IP address associated with the given interface
+ * \brief Registers the provided function as callback function for handling queued outgoing packets, and
+ *        begins queueing outgoing packets
  * 
- * \param interface The name of the interface to get the IP address
- * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * \param cb Pointer to the desired callback function, which should have the form:
+ *   *       - uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length);
+ *           - function should return PACKET_ACCEPT or PACKET_DROP to indicate verdict
  * 
- * \return The IP address of the interface or -1 for failure
+ * \return 0 for success, -1 for failure
  */
-uint32_t QueueForwarding(uint8_t *interface, uint8_t type);
+uint32_t RegisterOutgoingCallback(CallbackFunction cb);
 
 /**
- * \brief Gets the desired IP address associated with the given interface
+ * \brief Registers the provided function as callback function for handling queued forwarded packets, and
+ *        begins queueing forwarded packets
  * 
- * \param interface The name of the interface to get the IP address
- * \param type The type of ip address to get (0 - default, 1 - broadcast)
+ * \param cb Pointer to the desired callback function, which should have the form:
+ *   *       - uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length);
+ *           - function should return PACKET_ACCEPT or PACKET_DROP to indicate verdict
  * 
- * \return The IP address of the interface or -1 for failure
+ * \return 0 for success, -1 for failure
  */
-uint32_t QueueOutgoing(uint8_t *interface, uint8_t type);
+uint32_t RegisterForwardCallback(CallbackFunction cb);
 
 #endif
 

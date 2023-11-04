@@ -53,8 +53,8 @@ int SendBroadcast(uint8_t *msg_buf, uint8_t *header)
 
 int InitializeSend()
 {
-	int r = system("sudo ./api_shell.sh");
+	int r = 0;
 	//system("/sbin/iptables -F"); // delete current iptables rules
-	//system("sudo /sbin/iptables -A INPUT -p UDP --sport 269 --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
+	
 	return (r < 0) ? -1 : 0;
 }
