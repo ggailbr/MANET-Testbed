@@ -31,7 +31,7 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     int p_length = 0; // length of entire packet including headers
     uint8_t *p_data; // payload of packet, including headers
 	uint8_t *p_payload; // payload of packet, no headers
-	
+
     uint32_t src = 0; // src ip addr
     uint32_t dest = 0; // dest ip addr   
 
@@ -47,6 +47,11 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 	iphdrlen = iph->ihl * 4;
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
+
+	if(dest == broadcast_ip && src == local_ip)
+	{
+		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
+	}
 
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
@@ -89,7 +94,7 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     dest = iph->daddr; // get packet destination
 
 	// hard checks for broadcast messages
-	if(dest == broadcast_ip)
+	if(dest == broadcast_ip && src == local_ip)
 	{
 		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
 	}

@@ -34,7 +34,8 @@ int main(void)
 
 	while(1)
 	{
-		SendUnicast(a, "test message", 13, NULL);
+		sleep(1);
+		SendBroadcast("test message", 13, NULL);
 	}
 
 	return 0;
