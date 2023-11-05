@@ -30,7 +30,8 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 	uint32_t id = -1; // id of packet in the queue
     int p_length = 0; // length of entire packet including headers
     uint8_t *p_data; // payload of packet, including headers
-
+	uint8_t *p_payload; // payload of packet, no headers
+	
     uint32_t src = 0; // src ip addr
     uint32_t dest = 0; // dest ip addr   
 
@@ -38,7 +39,8 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
-    p_length = nfq_get_payload(nfa, &p_data);
+    p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
+	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
     unsigned short iphdrlen;
 	struct iphdr *iph = ((struct iphdr *) p_data);
@@ -67,16 +69,18 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 	uint32_t id = -1; // id of packet in the queue
     int p_length = 0; // length of entire packet including headers
     uint8_t *p_data; // payload of packet, including headers
+	uint8_t *p_payload; // payload of packet, no headers
 
     uint32_t src = 0; // src ip addr
-    uint32_t dest = 0; // dest ip addr   "
+    uint32_t dest = 0; // dest ip addr
 
     // get packet sender, destination, payload, and payload_length
 	printf("nfa:%p\t");
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
-    p_length = nfq_get_payload(nfa, &p_data);
+    p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
+	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
     unsigned short iphdrlen;
 	struct iphdr *iph = ((struct iphdr *) p_data);
@@ -92,7 +96,7 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
-		p_data, src, dest, p_data+16, p_length);
+		p_data, src, dest, p_payload, p_length);
 
 	// call user function
  	uint32_t ret = (*outgoing)(p_data, src, dest, p_data+16, p_length);
@@ -120,7 +124,7 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
-    p_length = nfq_get_payload(nfa, &p_data);
+    p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
     unsigned short iphdrlen;
