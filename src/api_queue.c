@@ -41,7 +41,7 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     p_length = nfq_get_payload(nfa, &p_data);
 
     unsigned short iphdrlen;
-	struct iphdr *iph = ((struct iphdr *) data);
+	struct iphdr *iph = ((struct iphdr *) p_data);
 	iphdrlen = iph->ihl * 4;
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
@@ -119,7 +119,7 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
     unsigned short iphdrlen;
-	struct iphdr *iph = ((struct iphdr *) data);
+	struct iphdr *iph = ((struct iphdr *) p_data);
 	iphdrlen = iph->ihl * 4;
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
@@ -204,7 +204,7 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
-	// ^ may change to except all incming packets frm this netwrk
+	// ^ may change to except all incming packets frm this netwrk, not just port 269 ones
 
  	int num = 0;
 	if(cb != NULL)
@@ -223,15 +223,13 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
-	system("sudo /sbin/iptables -A OUTPUT -p UDP --dport 269 -j ACCEPT");
+	system("sudo /sbin/iptables -A OUTPUT -d 192.168.1.255 -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
-	//system("sudo ");
 
 	int num = 1;
 	if(cb != NULL)
 	{
 		outgoing = cb;
-		printf("outgoing is %p\n", outgoing);
 	}
 	else
 		return -1;
