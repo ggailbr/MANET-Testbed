@@ -168,7 +168,7 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 
 	//connect the thread for specific socket
 	printf("binding this socket to queue %d\n", type);
-	qh = nfq_create_queue(h, (int) type, cb, NULL);
+	qh = nfq_create_queue(h, (int) type, &handle_outgoing, NULL);
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		return NULL;
