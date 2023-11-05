@@ -84,8 +84,8 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
 
-	// hard check for broadcast messages
-	if(src == broadcast_ip)
+	// hard checks for broadcast messages
+	if(dest == broadcast_ip)
 	{
 		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
 	}
