@@ -11,6 +11,17 @@ Header file for MANET Testbed API. Includes:
 - function headers for functions available to users
 */
 
+// main things rn
+// - excess includes
+// - code cleanup and documentation
+// - queue thread ending too early
+// - counting packets in the queue
+// - packet length from nfqueue not correctly coming from nfq_get_payload
+// - dynamic library linking weirdness
+// - incoming/outgoing/forwarding logic - is it all correct?
+//          - look into queueing based on destination
+// - updating all header blocks
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

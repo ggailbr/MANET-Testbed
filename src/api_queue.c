@@ -134,8 +134,9 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 		return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
-void *thread_func(uint8_t type) // function for thread to poll for incoming packets
+void *thread_func(void *type2) // function for thread to poll for incoming packets
 {
+	uint8_t type = *(uint8_t *)type2;
 	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
