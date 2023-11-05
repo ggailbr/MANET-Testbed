@@ -39,7 +39,7 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
-    p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET + 14;
+    p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
     unsigned short iphdrlen;
@@ -55,7 +55,7 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
-		p_data, src, dest, p_data+16, p_length);
+		p_data, src, dest, p_payload, p_length);
 
 	// call user function
  	uint32_t ret = (*incoming)(p_data, src, dest, p_data+16, p_length);

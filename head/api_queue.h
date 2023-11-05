@@ -12,7 +12,7 @@ pthread_t in_thread; // to pull from incoming queue
 pthread_t out_thread; // to pull from outgoing queue
 pthread_t forward_thread; // to pull from forward queue
 
-#define IP_UDP_HDR_OFFSET 42
+#define IP_UDP_HDR_OFFSET 28
 
 /**
  * \brief Initializes functions related to NFQUEUE.
