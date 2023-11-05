@@ -145,7 +145,7 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 	char buf[128000] __attribute__ ((aligned));
 	int num_recv = 0;
 	int thread_fd = 0;
-	void* cb;
+	nfq_callback* cb;
 	
 	switch(type) {
 		case 0:
