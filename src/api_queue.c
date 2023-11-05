@@ -136,7 +136,8 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 
 void *thread_func(void *type2) // function for thread to poll for incoming packets
 {
-	uint8_t type = *(uint8_t *)type2;
+	uint8_t * type3 = (uint8_t *)type2;
+	uint8_t type = *type3;
 	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
@@ -203,13 +204,12 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 	// setup iptables rule
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
 
-	int num = 0;
-	void *type = &num;
+ 	uint8_t num = 0;
 	if(cb != NULL)
 		incoming = cb;
 	else
 		return -1;
-	int check = pthread_create(&in_thread, NULL, (void *)thread_func, type); // thread to poll queue 0
+	int check = pthread_create(&in_thread, NULL, (void *)thread_func, (void *)&num); // thread to poll queue 0
 	if(check)
 	{
 		printf("error creating thread");
@@ -223,13 +223,12 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 	// setup iptables rule
 	system("sudo /sbin/iptables -A OUTPUT -p UDP --dport 269 -j NFQUEUE --queue-num 1"); // queue outgoing udp
 
-	int num = 1;
-	void *type = &num;
+	uint8_t num = 1;
 	if(cb != NULL)
 		incoming = cb;
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func, type); // thread to poll queue 1
+	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *) &num); // thread to poll queue 1
 	if(check)
 	{
 		printf("error creating thread");
@@ -243,13 +242,12 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 	// setup iptables rule
 	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2"); // queue forwarded udp
 
-	int num = 2;
-	void *type = &num;
+	uint8_t num = 2;
 	if(cb != NULL)
 		incoming = cb;
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func, type); // thread to poll queue 2
+	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *)&num); // thread to poll queue 2
 	if(check)
 	{
 		printf("error creating thread");
