@@ -153,7 +153,7 @@ void *thread_func_in(void *type2) // function for thread to poll for incoming pa
 	int thread_fd = 0;
 
 	// open queue
-	printf("open handle to the netfilter_queue - > queue 0 (incming)\n");
+	printf("open handle to the netfilter_queue - > queue 0 (incoming)\n");
 	h = nfq_open();
 	if (!h) {
 		fprintf(stderr, "cannot open nfq_open()\n");
@@ -161,7 +161,7 @@ void *thread_func_in(void *type2) // function for thread to poll for incoming pa
 	}
 
 	//connect the thread for specific socket
-	printf("binding this socket to queue 0 (incming)");
+	printf("binding this socket to queue 0 (incoming)\n");
 	qh = nfq_create_queue(h, 0, &handle_incoming, NULL);
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
@@ -212,7 +212,7 @@ void *thread_func_out(void *type2) // function for thread to poll for incoming p
 	}
 
 	//connect the thread for specific socket
-	printf("binding this socket to queue 1 (incming)");
+	printf("binding this socket to queue 1 (outgoing)\n");
 	qh = nfq_create_queue(h, 1, &handle_outgoing, NULL);
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
@@ -263,7 +263,7 @@ void *thread_func_for(void *type2) // function for thread to poll for incoming p
 	}
 
 	//connect the thread for specific socket
-	printf("binding this socket to queue 2 (forward)");
+	printf("binding this socket to queue 2 (forward)\n");
 	qh = nfq_create_queue(h, 2, &handle_forwarded, NULL);
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
