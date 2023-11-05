@@ -94,7 +94,7 @@ int SwitchRoutingTable(uint8_t *table);
  * \return 0 for success, -1 for failure
  * 
  */
-int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
+int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint32_t size, uint8_t *header);
 
 /**
  * \brief Sends a broadcast message to the interface broadcast IP address
@@ -104,7 +104,7 @@ int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header);
  * 
  * \return 0 for success, -1 for failure
  */
-int SendBroadcast(uint8_t *msg_buf, uint8_t *header);
+int SendBroadcast(uint8_t *msg_buf, uint32_t size, uint8_t *header);
 
 /**
  * \brief Gets the desired IP address associated with the given interface

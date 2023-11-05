@@ -13,7 +13,7 @@ The basic API file for the MANET Testbed - to implement:
 
 int sock = 0;
 
-int send_sock_msg(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header, int type)
+int send_sock_msg(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header, int type, uint32_t size)
 {
     if(!sock) // open dgram socket for udp, if there isn't one
 	{
@@ -33,21 +33,21 @@ int send_sock_msg(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header, int 
 		inet_pton(AF_INET, ntop(AF_INET, &dest_address), &(destination.sin_addr));
     destination.sin_port = htons(269); // standard port for MANET comms
 
-    int r = sendto(sock, msg_buf, strlen((char *)msg_buf), 0, (struct sockaddr*) &destination, sizeof(destination));
+    int r = sendto(sock, msg_buf, size, 0, (struct sockaddr*) &destination, sizeof(destination));
     if(r < 0 || f_err != 0)
 		return -1;
     return r;
 }
 
-int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint8_t *header)
+int SendUnicast(uint32_t dest_address, uint8_t *msg_buf, uint32_t size, uint8_t *header)
 {
-	int r = send_sock_msg(dest_address, msg_buf, header, 0);
+	int r = send_sock_msg(dest_address, msg_buf, header, 0, size);
 	return (r < 0) ? -1 : 0;
 }
 
-int SendBroadcast(uint8_t *msg_buf, uint8_t *header)
+int SendBroadcast(uint8_t *msg_buf, uint32_t size, uint8_t *header)
 {
-	int r = send_sock_msg(0, msg_buf, header, 1);
+	int r = send_sock_msg(0, msg_buf, header, 1, size);
 	return (r < 0) ? -1 : 0;
 }
 

@@ -147,18 +147,6 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 	char buf[128000] __attribute__ ((aligned));
 	int num_recv = 0;
 	int thread_fd = 0;
-	nfq_callback* cb;
-	
-	switch(type) {
-		case 0:
-			cb = &handle_incoming;
-		case 1:
-			cb = &handle_outgoing;
-		case 2:
-			cb = &handle_forwarded;
-		default:
-			cb = NULL;
-	}
 
 	// open queue
 	printf("open handle to the netfilter_queue - > queue %d \n", type);
@@ -170,7 +158,16 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 
 	//connect the thread for specific socket
 	printf("binding this socket to queue %d\n", type);
-	qh = nfq_create_queue(h, (int) type, &handle_outgoing, NULL);
+	switch(type) {
+		case 0:
+			qh = nfq_create_queue(h, (int) type, &handle_incoming, NULL);
+		case 1:
+			qh = nfq_create_queue(h, (int) type, &handle_outgoing, NULL);
+		case 2:
+			qh = nfq_create_queue(h, (int) type, &handle_forwarded, NULL);
+		default:
+			qh = 0;
+	}
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		return NULL;
