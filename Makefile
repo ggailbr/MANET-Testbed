@@ -14,7 +14,6 @@ testbed:
 	make clean
 	make $(OBJECTS)
 	$(CC) -shared -Wall $(OBJ)/*.o -o libtestbed.so
-	make test
 
 $(OBJ)/%.o: $(SRC)/%.c
 	$(CC) -I$(HEAD) -c $< -o $@
@@ -36,5 +35,5 @@ queue: Examples/libnetfilter_queue_example.c
 
 clean:
 	rm -f $(OBJ)/*.o
-	rm -f testbed.so
+	rm -f libtestbed.so
 	rm -f test.out
