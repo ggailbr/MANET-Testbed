@@ -16,7 +16,9 @@ The basic API file for the MANET Testbed - to implement:
 int InitializeQueue()
 {
 	incoming = outgoing = forwarded = NULL;
-	int r = system("sudo ./OtherAPI/api_shell.sh");
+	int r = system("/sbin/iptables -F");
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'");
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv6/conf/wlan0/disable_ipv6'");
 	return (r < 0) ? -1 : 0;
 }
 
