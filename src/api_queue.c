@@ -89,6 +89,7 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 		p_data, src, dest, p_data+16, p_length);
 
 	// call user function
+	printf("outgoing is %p\n", outgoing);
  	uint32_t ret = (*outgoing)(p_data, src, dest, p_data+16, p_length);
 
 	// set verdict
@@ -230,7 +231,10 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 
 	int num = 1;
 	if(cb != NULL)
-		incoming = cb;
+	{
+		outgoing = cb;
+		printf("outgoing is %p\n", outgoing);
+	}
 	else
 		return -1;
 	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *)num); // thread to poll queue 1
@@ -249,7 +253,7 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 
 	int num = 2;
 	if(cb != NULL)
-		incoming = cb;
+		forwarded = cb;
 	else
 		return -1;
 	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *)num); // thread to poll queue 2
