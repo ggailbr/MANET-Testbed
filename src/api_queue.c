@@ -84,6 +84,12 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
 
+	// hard check for broadcast messages
+	if(src == broadcast_ip)
+	{
+		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
+	}
+
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
 		p_data, src, dest, p_data+16, p_length);
@@ -223,7 +229,7 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
-	system("sudo /sbin/iptables -I OUTPUT -d 192.168.1.255 -j REJECT");
+	system("sudo /sbin/iptables -I OUTPUT -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
 
 	int num = 1;
