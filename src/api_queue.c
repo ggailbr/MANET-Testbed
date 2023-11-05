@@ -58,7 +58,7 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 		p_data, src, dest, p_payload, p_length);
 
 	// call user function
- 	uint32_t ret = (*incoming)(p_data, src, dest, p_data+16, p_length);
+ 	uint32_t ret = (*incoming)(p_data, src, dest, p_payload, p_length);
 
 	// set verdict
 	if (ret == 0)
@@ -104,7 +104,7 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 		p_data, src, dest, p_payload, p_length);
 
 	// call user function
- 	uint32_t ret = (*outgoing)(p_data, src, dest, p_data+16, p_length);
+ 	uint32_t ret = (*outgoing)(p_data, src, dest, p_payload, p_length);
 
 	// set verdict
 	if (ret == 0)
