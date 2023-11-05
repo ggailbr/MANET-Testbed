@@ -223,7 +223,7 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
-	system("sudo /sbin/iptables -A OUTPUT -p UDP -dport 269 -j ACCEPT");
+	system("sudo /sbin/iptables -A OUTPUT -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
 	//system("sudo ");
 
