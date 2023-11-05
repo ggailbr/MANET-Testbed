@@ -204,6 +204,7 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
+	// ^ may change to except all incming packets frm this netwrk
 
  	int num = 0;
 	if(cb != NULL)
@@ -224,6 +225,7 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 	// setup iptables rule
 	system("sudo /sbin/iptables -A OUTPUT -p UDP -dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
+	//system("sudo ");
 
 	int num = 1;
 	if(cb != NULL)
