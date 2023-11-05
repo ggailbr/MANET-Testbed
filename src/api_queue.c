@@ -95,7 +95,6 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 		p_data, src, dest, p_data+16, p_length);
 
 	// call user function
-	printf("outgoing is %p\n", outgoing);
  	uint32_t ret = (*outgoing)(p_data, src, dest, p_data+16, p_length);
 
 	// set verdict
@@ -144,9 +143,8 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 		return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
-void *thread_func(void *type2) // function for thread to poll for incoming packets
+void *thread_func_in(void *type2) // function for thread to poll for incoming packets
 {
-	int type = (int)type2;
 	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
@@ -155,7 +153,7 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 	int thread_fd = 0;
 
 	// open queue
-	printf("open handle to the netfilter_queue - > queue %d \n", type);
+	printf("open handle to the netfilter_queue - > queue 0 (incming)\n");
 	h = nfq_open();
 	if (!h) {
 		fprintf(stderr, "cannot open nfq_open()\n");
@@ -163,18 +161,8 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 	}
 
 	//connect the thread for specific socket
-	printf("binding this socket to queue %d\n", type);
-/* 	switch(type) {
-		case 0:
-			qh = nfq_create_queue(h, (int) type, &handle_incoming, NULL);
-		case 1:
-			qh = nfq_create_queue(h, (int) type, &handle_outgoing, NULL);
-		case 2:
-			qh = nfq_create_queue(h, (int) type, &handle_forwarded, NULL);
-		default:
-			qh = 0;
-	} */
-	qh = nfq_create_queue(h, (int) type, &handle_outgoing, NULL);
+	printf("binding this socket to queue 0 (incming)");
+	qh = nfq_create_queue(h, 0, &handle_incoming, NULL);
 	if (!qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		return NULL;
@@ -193,11 +181,113 @@ void *thread_func(void *type2) // function for thread to poll for incoming packe
 	thread_fd = nfq_fd(h);
 
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
-		printf("packet received: %d \n", type);
+		printf("incoming packet received from queue: queue 0\n");
 		nfq_handle_packet(h, buf, num_recv);
 	}
 
-	printf("unbinding from queue %d  \n", type);
+	printf("unbinding from queue 0\n");
+	nfq_destroy_queue(qh);
+
+	printf("closing library handle\n");
+	nfq_close(h);
+
+	return NULL;
+}
+
+void *thread_func_out(void *type2) // function for thread to poll for incoming packets
+{
+	// setup queue
+	struct nfq_handle *h;
+	struct nfq_q_handle *qh;
+	char buf[128000] __attribute__ ((aligned));
+	int num_recv = 0;
+	int thread_fd = 0;
+
+	// open queue
+	printf("open handle to the netfilter_queue - > queue 1 (outgoing)\n");
+	h = nfq_open();
+	if (!h) {
+		fprintf(stderr, "cannot open nfq_open()\n");
+		return NULL;
+	}
+
+	//connect the thread for specific socket
+	printf("binding this socket to queue 1 (incming)");
+	qh = nfq_create_queue(h, 1, &handle_outgoing, NULL);
+	if (!qh) {
+		fprintf(stderr, "error during nfq_create_queue()\n");
+		return NULL;
+	}
+
+	//set queue length before start dropping packages
+	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);
+
+	//set the queue for copy mode
+	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
+		fprintf(stderr, "can't set packet_copy mode\n");
+		return NULL;
+	}
+
+	//getting the file descriptor
+	thread_fd = nfq_fd(h);
+
+	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
+		printf("outgoing packet received from queue: queue 1\n");
+		nfq_handle_packet(h, buf, num_recv);
+	}
+
+	printf("unbinding from queue 1\n");
+	nfq_destroy_queue(qh);
+
+	printf("closing library handle\n");
+	nfq_close(h);
+
+	return NULL;
+}
+
+void *thread_func_for(void *type2) // function for thread to poll for incoming packets
+{
+	// setup queue
+	struct nfq_handle *h;
+	struct nfq_q_handle *qh;
+	char buf[128000] __attribute__ ((aligned));
+	int num_recv = 0;
+	int thread_fd = 0;
+
+	// open queue
+	printf("open handle to the netfilter_queue - > queue 2 (forward)\n");
+	h = nfq_open();
+	if (!h) {
+		fprintf(stderr, "cannot open nfq_open()\n");
+		return NULL;
+	}
+
+	//connect the thread for specific socket
+	printf("binding this socket to queue 2 (forward)");
+	qh = nfq_create_queue(h, 2, &handle_forwarded, NULL);
+	if (!qh) {
+		fprintf(stderr, "error during nfq_create_queue()\n");
+		return NULL;
+	}
+
+	//set queue length before start dropping packages
+	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);
+
+	//set the queue for copy mode
+	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
+		fprintf(stderr, "can't set packet_copy mode\n");
+		return NULL;
+	}
+
+	//getting the file descriptor
+	thread_fd = nfq_fd(h);
+
+	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
+		printf("forwarded packet received from queue: queue 2\n");
+		nfq_handle_packet(h, buf, num_recv);
+	}
+
+	printf("unbinding from queue 2\n");
 	nfq_destroy_queue(qh);
 
 	printf("closing library handle\n");
@@ -217,10 +307,10 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 		incoming = cb;
 	else
 		return -1;
-	int check = pthread_create(&in_thread, NULL, (void *)thread_func, (void *)num); // thread to poll queue 0
+	int check = pthread_create(&in_thread, NULL, (void *)thread_func_in, (void *)num); // thread to poll queue 0
 	if(check)
 	{
-		printf("error creating thread");
+		printf("error creating incoming thread");
 		return -1;
 	}
 	return 0;
@@ -239,10 +329,10 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 	}
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *)num); // thread to poll queue 1
+	int check = pthread_create(&out_thread, NULL, (void *)thread_func_out, (void *)num); // thread to poll queue 1
 	if(check)
 	{
-		printf("error creating thread");
+		printf("error creating outgoing thread");
 		return -1;
 	}
 	return 0;
@@ -258,10 +348,10 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 		forwarded = cb;
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func, (void *)num); // thread to poll queue 2
+	int check = pthread_create(&out_thread, NULL, (void *)thread_func_for, (void *)num); // thread to poll queue 2
 	if(check)
 	{
-		printf("error creating thread");
+		printf("error creating forward thread");
 		return -1;
 	}
 	return 0;
