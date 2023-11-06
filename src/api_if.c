@@ -1,10 +1,12 @@
 /*
 Andre Koka - Created 9/28/2023
-             Last Updated: 10/27/2023
+             Last Updated: 11/6/2023
 
 The basic API file for the MANET Testbed - to implement:
 - GetInterfaceIP - retrieve ipv4 of an interface given its index
-- initialization involves setting global ip_address variables of the current node
+- SetInterface 	 - set current working interface (UNUSED)
+- InitializeIF() - set global and local ip address for later use
+				 - open netlink socket for testbed
 
 Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/ip_show.c
 */
@@ -14,6 +16,8 @@ Adapted from: https://github.com/d0u9/examples/blob/master/C/netlink/ip_show.c
 
 uint32_t * addr; // stores address to return
 char  *interface_name = "wlan0"; // wlan0 by default
+
+// ---------------------- HELPER FUNCTIONS ------------------
 
 static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to get ip
 {
@@ -40,14 +44,15 @@ static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to
 	return (r < 0) ? -1 : 0;
 }
 
-// receive reply from kernel over netlink socket
 static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive message over socket
 {
+	// declare message structure
 	struct iovec iov;
 	struct msghdr msg;
 	iov.iov_base = buf;
 	iov.iov_len = len;
 
+	// fill message using received buffer
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_name = sa;
 	msg.msg_namelen = sizeof(*sa);
@@ -57,9 +62,9 @@ static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive mes
 	return recvmsg(fd, &msg, 0);
 }
 
-// interpret the ifa message(s) received from the kernel
 static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t type)
 {
+	// parse information only when this is the desired interface
 	if(ifa->ifa_index == if_nametoindex(interface_name)) {
 		struct rtattr *rta = NULL;
 		for_each_rattr(rta, buf, len) {
@@ -72,7 +77,7 @@ static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t t
 			}
 		}
 	}
-	else if (if_nametoindex(interface_name) == 0)
+	else if (if_nametoindex(interface_name) == 0) // handling bad interface name
 		f_err = -1;
 
 	return f_err;
@@ -80,6 +85,7 @@ static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t t
 
 static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type)
 {
+	// only handle ERROR and NEW_ADDR message types
 	struct nlmsghdr *nl = NULL;
 	for_each_nlmsg(nl, buf, len) {
 		if (nl->nlmsg_type == NLMSG_ERROR) {
@@ -97,30 +103,35 @@ static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type)
 	return nl->nlmsg_type;
 }
 
+// ---------------------- API FUNCTIONS ------------------
+
 uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type)
 {
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lock); // thread safety
+
 	int len = 0;
 	if(interface != NULL) // if bad input, use last inteface (wlan0 default)
 		interface_name = (char *)interface; 
 
+	// create netlink socket address
 	struct sockaddr_nl sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.nl_family = AF_NETLINK;
 
+	// send netlink message requesting ip
 	len = get_ip(&sa, AF_INET);
 	check(len);
 
+	// receive and parse netlink reply
 	char buf[BUFLEN];
 	uint32_t nl_msg_type;
 	do {
 		len = get_msg(&sa, buf, BUFLEN);
 		check(len);
-
 		nl_msg_type = parse_nl_msg(buf, len, type);
 	} while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
-	pthread_mutex_unlock(&lock);
 
+	pthread_mutex_unlock(&lock);
 	return (f_err != 0) ? -1 : *addr;
 }
 
@@ -129,8 +140,8 @@ int InitializeIF()
 	if(!fd) {  // create socket if it hasn't been made
 		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 		check(fd); }
-	local_ip = GetInterfaceIP(NULL, 0);
-	broadcast_ip = GetInterfaceIP(NULL, 1);
+	local_ip = GetInterfaceIP(NULL, 0); // set global vars
+	broadcast_ip = GetInterfaceIP(NULL, 1); // set global vars
 	
 	if(local_ip == 0 || broadcast_ip == 0 || f_err != 0)
 		return -1;
