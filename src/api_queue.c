@@ -1,28 +1,19 @@
 /*
 Andre Koka - Created 11/4/2023
-             Last Updated: 11/4/2023
+             Last Updated: 11/6/2023
 
 The basic API file for the MANET Testbed - to implement:
-- all NFQUEUE related functions
+- RegisterIncomingCallback - queue incoming packets and handle with the given callback function
+- RegisterOutgoingCallback - queue outgoing packets and handle with the given callback function
+- RegisterForwardCallback - queue forwarded packets and handle with the given callback function
+- InitializeQueue() - run iptables rules to enable ipv4 forwarding and disable ipv6
 */
 
 #include "api.h"
 #include "api_queue.h"
-#include <linux/ip.h> // for IP header
-#include <linux/udp.h> // for UDP header
-#include <net/ethernet.h> // for ethernet header
-#include "../manet_testbed.h"
 
-int InitializeQueue()
-{
-	incoming = outgoing = forwarded = NULL;
-	int r = system("/sbin/iptables -F");
-	r = system("sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'");
-	r = system("sh -c 'echo 1 > /proc/sys/net/ipv6/conf/wlan0/disable_ipv6'");
-	return (r < 0) ? -1 : 0;
-}
+// ---------------------- HELPER FUNCTIONS ------------------
 
-// raw packet, src, dest, payload, length of payload
 int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
 {
     printf("entering callback: incoming\n");   
@@ -39,19 +30,21 @@ int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
+
+	// remove ipv4+udp header and set length accordingly
     p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
+	// process ip header to get src and dest addresses
     unsigned short iphdrlen;
 	struct iphdr *iph = ((struct iphdr *) p_data);
 	iphdrlen = iph->ihl * 4;
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
 
+	// prevent delivery of own broadcast messages to user-space
 	if(dest == broadcast_ip && src == local_ip)
-	{
 		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
-	}
 
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
@@ -80,24 +73,24 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
     uint32_t dest = 0; // dest ip addr
 
     // get packet sender, destination, payload, and payload_length
-	printf("nfa:%p\t");
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
+
+	// remove ipv4+udp header and set length accordingly
     p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
+	// process ip header to get src and dest addresses
     unsigned short iphdrlen;
 	struct iphdr *iph = ((struct iphdr *) p_data);
 	iphdrlen = iph->ihl * 4;
     src = iph->saddr; // get packet sender
     dest = iph->daddr; // get packet destination
 
-	// hard checks for broadcast messages
+	// prevent delivery of own broadcast messages to user-space
 	if(dest == broadcast_ip && src == local_ip)
-	{
 		return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
-	}
 
     printf("the protocol is %d\n", iph->protocol); // protocol check
 	printf("p_data:%p\tsrc:%X\tdest:%X\tp_data+16:%p\tpayload len:%d\n", 
@@ -129,9 +122,12 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
     struct nfqnl_msg_packet_hdr *p_header = nfq_get_msg_packet_hdr(nfa);
     if(p_header)
         id = ntohl(p_header->packet_id);
+	
+	// remove ipv4+udp header and set length accordingly
     p_length = nfq_get_payload(nfa, &p_data) - IP_UDP_HDR_OFFSET;
 	p_payload = p_data + IP_UDP_HDR_OFFSET;
 
+	// process ip header to get src and dest addresses
     unsigned short iphdrlen;
 	struct iphdr *iph = ((struct iphdr *) p_data);
 	iphdrlen = iph->ihl * 4;
@@ -152,9 +148,8 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 		return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
-void *thread_func_in(void *type2) // function for thread to poll for incoming packets
+void *thread_func_in()
 {
-	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
 	char buf[128000] __attribute__ ((aligned));
@@ -177,18 +172,15 @@ void *thread_func_in(void *type2) // function for thread to poll for incoming pa
 		return NULL;
 	}
 
-	//set queue length before start dropping packages
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);
+	uint32_t ql = nfq_set_queue_maxlen(qh, 100000); // set queue length
 
-	//set the queue for copy mode
+	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
 		fprintf(stderr, "can't set packet_copy mode\n");
 		return NULL;
 	}
 
-	//getting the file descriptor
-	thread_fd = nfq_fd(h);
-
+	thread_fd = nfq_fd(h); // get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("incoming packet received from queue: queue 0\n");
 		nfq_handle_packet(h, buf, num_recv);
@@ -203,9 +195,8 @@ void *thread_func_in(void *type2) // function for thread to poll for incoming pa
 	return NULL;
 }
 
-void *thread_func_out(void *type2) // function for thread to poll for incoming packets
+void *thread_func_out()
 {
-	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
 	char buf[128000] __attribute__ ((aligned));
@@ -228,18 +219,16 @@ void *thread_func_out(void *type2) // function for thread to poll for incoming p
 		return NULL;
 	}
 
-	//set queue length before start dropping packages
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);
+	uint32_t ql = nfq_set_queue_maxlen(qh, 100000); // set queue length
 
-	//set the queue for copy mode
+	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
 		fprintf(stderr, "can't set packet_copy mode\n");
 		return NULL;
 	}
 
-	//getting the file descriptor
-	thread_fd = nfq_fd(h);
-
+	
+	thread_fd = nfq_fd(h); //get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("outgoing packet received from queue: queue 1\n");
 		nfq_handle_packet(h, buf, num_recv);
@@ -254,9 +243,8 @@ void *thread_func_out(void *type2) // function for thread to poll for incoming p
 	return NULL;
 }
 
-void *thread_func_for(void *type2) // function for thread to poll for incoming packets
+void *thread_func_for()
 {
-	// setup queue
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
 	char buf[128000] __attribute__ ((aligned));
@@ -279,18 +267,15 @@ void *thread_func_for(void *type2) // function for thread to poll for incoming p
 		return NULL;
 	}
 
-	//set queue length before start dropping packages
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);
+	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);	//set queue length
 
-	//set the queue for copy mode
+	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
 		fprintf(stderr, "can't set packet_copy mode\n");
 		return NULL;
 	}
 
-	//getting the file descriptor
-	thread_fd = nfq_fd(h);
-
+	thread_fd = nfq_fd(h); //get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("forwarded packet received from queue: queue 2\n");
 		nfq_handle_packet(h, buf, num_recv);
@@ -305,21 +290,21 @@ void *thread_func_for(void *type2) // function for thread to poll for incoming p
 	return NULL;
 }
 
+// ---------------------- API FUNCTIONS ------------------
+
 uint32_t RegisterIncomingCallback(CallbackFunction cb)
 {
 	// setup iptables rule
-	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming udp
+	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming control plane
 	// ^ may change to except all incming packets frm this netwrk, not just port 269 ones
 
- 	int num = 0;
-	if(cb != NULL)
+	if(cb != NULL) // handle bad input
 		incoming = cb;
 	else
 		return -1;
-	int check = pthread_create(&in_thread, NULL, (void *)thread_func_in, (void *)num); // thread to poll queue 0
-	if(check)
+	if(pthread_create(&in_thread, NULL, (void *)thread_func_in, NULL)) // create thread for incoming queue
 	{
-		printf("error creating incoming thread");
+		printf("error creating incoming thread\n");
 		return -1;
 	}
 	return 0;
@@ -331,17 +316,13 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 	system("sudo /sbin/iptables -I OUTPUT -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
 
-	int num = 1;
-	if(cb != NULL)
-	{
+	if(cb != NULL) // handle bad input
 		outgoing = cb;
-	}
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func_out, (void *)num); // thread to poll queue 1
-	if(check)
+	if(pthread_create(&out_thread, NULL, (void *)thread_func_out, NULL)) // create thread for outgoing queue
 	{
-		printf("error creating outgoing thread");
+		printf("error creating outgoing thread\n");
 		return -1;
 	}
 	return 0;
@@ -352,16 +333,23 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 	// setup iptables rule
 	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2"); // queue forwarded udp
 
-	int num = 2;
 	if(cb != NULL)
 		forwarded = cb;
 	else
 		return -1;
-	int check = pthread_create(&out_thread, NULL, (void *)thread_func_for, (void *)num); // thread to poll queue 2
-	if(check)
+	if(pthread_create(&out_thread, NULL, (void *)thread_func_for, NULL)) // create thread for forward queue
 	{
 		printf("error creating forward thread");
 		return -1;
 	}
 	return 0;
+}
+
+int InitializeQueue()
+{
+	incoming = outgoing = forwarded = NULL;
+	int r = system("/sbin/iptables -F");
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'");
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv6/conf/wlan0/disable_ipv6'");
+	return (r < 0) ? -1 : 0;
 }

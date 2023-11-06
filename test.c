@@ -1,5 +1,6 @@
 // sudo LD_LIBRARY_PATH=/home/pi/Documents/MANET-Testbed:$LD_LIBRARY_PATH ./test.out
 #include "manet_testbed.h"
+#include "debug.h"
 
 char *ntop(int domain, void *buf) // convert ip to string
 {
@@ -10,7 +11,7 @@ char *ntop(int domain, void *buf) // convert ip to string
 
 int in(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length)
 {
-	return 1;
+	printf("incoming!!");
 }
 int out(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length)
 {
@@ -23,11 +24,11 @@ int out(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32
 int main(void)
 {
     char *name = "wlan0";
-
+	printf("test\n");
 	InitializeAPI();
 	uint32_t a = GetInterfaceIP((uint8_t *)name, 0);
 	a = a + 0x02000000;
-	printf("%s", ntop(AF_INET, &a));
+	printf("%s\n", ntop(AF_INET, &a));
 
 	RegisterIncomingCallback(&in);
 	RegisterOutgoingCallback(&out);

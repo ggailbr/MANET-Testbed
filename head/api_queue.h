@@ -1,9 +1,10 @@
 #ifndef API_QUEUE_H
 #define API_QUEUE_H
 
+#include <linux/ip.h> // for IP header
 #include "../manet_testbed.h"
 
-// store registered callback functions
+// store registered callback functions from user
 CallbackFunction incoming;
 CallbackFunction outgoing;
 CallbackFunction forwarded;
@@ -12,7 +13,8 @@ pthread_t in_thread; // to pull from incoming queue
 pthread_t out_thread; // to pull from outgoing queue
 pthread_t forward_thread; // to pull from forward queue
 
-#define IP_UDP_HDR_OFFSET 28
+// size of ipv4 pseudoheader + udp header
+#define IP_UDP_HDR_OFFSET 28 
 
 /**
  * \brief Initializes functions related to NFQUEUE.
@@ -20,7 +22,6 @@ pthread_t forward_thread; // to pull from forward queue
  * \return 0 for success, -1 for failure
 */
 int InitializeQueue();
-
 
 /**
  * \brief Helper function to handle queued incoming packets
@@ -44,4 +45,3 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data);
 
 #endif
-
