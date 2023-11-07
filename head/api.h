@@ -23,6 +23,8 @@ Internal header file for MANET Testbed. Includes:
 #include <arpa/inet.h>          // for converting ip addresses to binary
 #include <net/if.h>             // for converting network interface names to binary
 #include <pthread.h>			// API should be thread-safe
+#include <linux/netfilter.h>
+#include <libnetfilter_queue/libnetfilter_queue.h>
 
 #define BUFLEN		4096
 

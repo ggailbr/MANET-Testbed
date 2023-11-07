@@ -172,7 +172,7 @@ void *thread_func_in()
 		return NULL;
 	}
 
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000); // set queue length
+	uint32_t ql = nfq_set_queue_maxlen(qh, QUEUE_LEN); // set queue length
 
 	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
@@ -183,7 +183,7 @@ void *thread_func_in()
 	thread_fd = nfq_fd(h); // get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("incoming packet received from queue: queue 0\n");
-		nfq_handle_packet(h, buf, num_recv);
+		nfq_handle_packet(h, buf, num_recv); // callback functions activated here
 	}
 
 	printf("unbinding from queue 0\n");
@@ -219,7 +219,7 @@ void *thread_func_out()
 		return NULL;
 	}
 
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000); // set queue length
+	uint32_t ql = nfq_set_queue_maxlen(qh, QUEUE_LEN); // set queue length
 
 	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
@@ -231,7 +231,7 @@ void *thread_func_out()
 	thread_fd = nfq_fd(h); //get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("outgoing packet received from queue: queue 1\n");
-		nfq_handle_packet(h, buf, num_recv);
+		nfq_handle_packet(h, buf, num_recv); // callback functions activated here
 	}
 
 	printf("unbinding from queue 1\n");
@@ -267,7 +267,7 @@ void *thread_func_for()
 		return NULL;
 	}
 
-	uint32_t ql = nfq_set_queue_maxlen(qh, 100000);	//set queue length
+	uint32_t ql = nfq_set_queue_maxlen(qh, QUEUE_LEN);	//set queue length
 
 	//set the queue for copy mode (copy whole packet)
 	if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
@@ -278,7 +278,7 @@ void *thread_func_for()
 	thread_fd = nfq_fd(h); //get file descriptor for this socket
 	while ((num_recv = recv(thread_fd, buf, sizeof(buf), 0)) && num_recv >= 0) {
 		printf("forwarded packet received from queue: queue 2\n");
-		nfq_handle_packet(h, buf, num_recv);
+		nfq_handle_packet(h, buf, num_recv); // callback functions activated here
 	}
 
 	printf("unbinding from queue 2\n");
@@ -294,11 +294,11 @@ void *thread_func_for()
 
 uint32_t RegisterIncomingCallback(CallbackFunction cb)
 {
-	// setup iptables rule
-	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0"); // queue incoming control plane
+	// setup iptables rules (queue incoming control plane messages)
+	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0");
 	// ^ may change to except all incming packets frm this netwrk, not just port 269 ones
 
-	if(cb != NULL) // handle bad input
+	if(cb != NULL)
 		incoming = cb;
 	else
 		return -1;
@@ -312,11 +312,11 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 
 uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 {
-	// setup iptables rule
+	// setup iptables rules (queue outgoing data plane messages)
 	system("sudo /sbin/iptables -I OUTPUT -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
 
-	if(cb != NULL) // handle bad input
+	if(cb != NULL)
 		outgoing = cb;
 	else
 		return -1;
@@ -330,8 +330,8 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 
 uint32_t RegisterForwardCallback(CallbackFunction cb)
 {
-	// setup iptables rule
-	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2"); // queue forwarded udp
+	// setup iptables rules (queue forwarded data plane messages)
+	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2");
 
 	if(cb != NULL)
 		forwarded = cb;
@@ -348,8 +348,8 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 int InitializeQueue()
 {
 	incoming = outgoing = forwarded = NULL;
-	int r = system("/sbin/iptables -F");
-	r = system("sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'");
-	r = system("sh -c 'echo 1 > /proc/sys/net/ipv6/conf/wlan0/disable_ipv6'");
+	int r = system("/sbin/iptables -F"); // flush current iptables rules
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'"); // enable ipv4 forwarding
+	r = system("sh -c 'echo 1 > /proc/sys/net/ipv6/conf/wlan0/disable_ipv6'"); // disable ipv6 
 	return (r < 0) ? -1 : 0;
 }

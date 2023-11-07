@@ -34,8 +34,6 @@ Header file for MANET Testbed API. Includes:
 #include <arpa/inet.h>          // definitions of internet operations
 #include <net/if.h>             // for managing network interfaces
 #include <pthread.h>
-#include <linux/netfilter.h>
-#include <libnetfilter_queue/libnetfilter_queue.h>
 
 #define PACKET_ACCEPT 1
 #define PACKET_DROP 0
