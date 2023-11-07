@@ -140,6 +140,7 @@ int InitializeIF()
 	if(!fd) {  // create socket if it hasn't been made
 		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 		check(fd); }
+	
 	local_ip = GetInterfaceIP(NULL, 0); // set global vars
 	broadcast_ip = GetInterfaceIP(NULL, 1); // set global vars
 	
