@@ -1,6 +1,6 @@
 /*
 Andre Koka - Created 10/8/2023
-             Last Updated: 10/27/2023
+             Last Updated: 11/7/2023
 
 The basic API file for the MANET Testbed - to implement:
 - all common functions between other API files
@@ -22,8 +22,6 @@ uint32_t broadcast_ip = 0;
 
 int InitializeAPI() // required to be called first
 {
-	debprintf("test2");
-	debprintf("test3");
 	check(InitializeIF());
 	check(InitializeRoute());
 	check(InitializeSend());
@@ -31,6 +29,23 @@ int InitializeAPI() // required to be called first
 	if(f_err != 0)
 		return -1;
 	return 0;
+}
+
+// receive message (through the msghdr format) over socket fd
+int get_msg(struct sockaddr_nl *sa, void *buf, size_t len)
+{
+	struct iovec iov;
+	struct msghdr msg;
+	iov.iov_base = buf;
+	iov.iov_len = len;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = sa;
+	msg.msg_namelen = sizeof(*sa);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+
+	return recvmsg(fd, &msg, 0); // block to receive message from kernel
 }
 
 void check(int val) // check for error returned

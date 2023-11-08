@@ -3,7 +3,7 @@
 
 /*
 Andre Koka - Created 10/2/2023
-             Last Updated: 10/27/2023
+             Last Updated: 11/7/2023
 
 Header file for MANET Testbed API. Includes:
 - global variables for socket, interface id, current routing table

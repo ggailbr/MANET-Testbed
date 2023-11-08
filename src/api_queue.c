@@ -1,6 +1,6 @@
 /*
 Andre Koka - Created 11/4/2023
-             Last Updated: 11/6/2023
+             Last Updated: 11/7/2023
 
 The basic API file for the MANET Testbed - to implement:
 - RegisterIncomingCallback - queue incoming packets and handle with the given callback function
@@ -294,6 +294,8 @@ void *thread_func_for()
 
 uint32_t RegisterIncomingCallback(CallbackFunction cb)
 {
+	pthread_mutex_lock(&lock);
+
 	// setup iptables rules (queue incoming control plane messages)
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0");
 	// ^ may change to except all incming packets frm this netwrk, not just port 269 ones
@@ -307,11 +309,15 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 		printf("error creating incoming thread\n");
 		return -1;
 	}
+
+	pthread_mutex_unlock(&lock);
 	return 0;
 }
 
 uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 {
+	pthread_mutex_lock(&lock);
+
 	// setup iptables rules (queue outgoing data plane messages)
 	system("sudo /sbin/iptables -I OUTPUT -p UDP --dport 269 -j ACCEPT");
 	system("sudo /sbin/iptables -A OUTPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 1");
@@ -325,11 +331,15 @@ uint32_t RegisterOutgoingCallback(CallbackFunction cb)
 		printf("error creating outgoing thread\n");
 		return -1;
 	}
+
+	pthread_mutex_unlock(&lock);
 	return 0;
 }
 
 uint32_t RegisterForwardCallback(CallbackFunction cb)
 {
+	pthread_mutex_lock(&lock);
+
 	// setup iptables rules (queue forwarded data plane messages)
 	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2");
 
@@ -342,6 +352,8 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 		printf("error creating forward thread");
 		return -1;
 	}
+
+	pthread_mutex_unlock(&lock);
 	return 0;
 }
 

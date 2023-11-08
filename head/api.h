@@ -3,10 +3,10 @@
 
 /*
 Andre Koka - Created 10/27/2023
-             Last Updated: 10/27/2023
+             Last Updated: 11/7/2023
 
 Internal header file for MANET Testbed. Includes:
-- global variables for socket, interface id, current routing table
+- global variables for socket, interface id, and mutex lock
 - definitions for custom netlink functions
 - function headers for shared functions between api files
 */
@@ -45,6 +45,38 @@ pthread_mutex_t lock; // providing thread safety
 
 void check(int val); // check for error
 char *ntop(int domain, void *buf); // convert ip to string
+
+// function definitions
+
+/**
+ * \brief Helper function that receives a message over the current netlink socket, using
+ * struct msghdr and struct iovec
+ * 
+ * \param sa Pointer to a struct sockaddr_nl that was used in get_ip()
+ * \param buf Buffer to hold msg contents
+ * \param len Length of buf
+ * 
+ * \return number of bytes read, or -1 on error
+*/
+int get_msg(struct sockaddr_nl *sa, void *buf, size_t len);
+
+/**
+ * \brief Very rudimentary error checking function, which sets the 
+ * api-specific f_err flag to 1
+ * 
+ * \param val The return value (of a function) to check for errors
+ * 
+*/
+void check(int val);
+
+/**
+ * \brief Simple function to convert an ipv4 address in uint32_t form to 
+ * a null-terminated string form. Used only for debugging purposes
+ * 
+ * \return A character pointer to the string version of the ipv4 address
+ * 
+*/
+char *ntop(int domain, void *buf);
 
 #endif
 

@@ -30,18 +30,6 @@ int InitializeIF();
 static int get_ip(struct sockaddr_nl *sa, int domain);
 
 /**
- * \brief Helper function that receives a message over the current netlink socket, using
- * struct msghdr and struct iovec
- * 
- * \param sa Pointer to a struct sockaddr_nl that was used in get_ip()
- * \param buf Buffer to hold msg contents
- * \param len Length of buf
- * 
- * \return number of bytes read, or -1 on error
-*/
-static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len);
-
-/**
  * \brief Helper function that processes one IFA message received from netlink
  * 
  * \param ifa Pointer to a struct ifaddrmsg that was received from netlink, pointing to current
@@ -55,7 +43,7 @@ static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len);
 static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t type);
 
 /**
- * \brief Helper function that parses one received netlink message
+ * \brief Helper function that parses one received netlink message regarding interfaces
  * 
  * \param buf Buffer to hold netlink msg contents
  * \param len Length of buf
@@ -63,6 +51,6 @@ static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t t
  * 
  * \return number of bytes read, or -1 on error
 */
-static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type);
+static uint32_t parse_nl_if_msg(void *buf, size_t len, uint8_t type);
 
 #endif

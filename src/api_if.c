@@ -1,6 +1,6 @@
 /*
 Andre Koka - Created 9/28/2023
-             Last Updated: 11/6/2023
+             Last Updated: 11/7/2023
 
 The basic API file for the MANET Testbed - to implement:
 - GetInterfaceIP - retrieve ipv4 of an interface given its index
@@ -44,24 +44,6 @@ static int get_ip(struct sockaddr_nl *sa, int domain) // send netlink message to
 	return (r < 0) ? -1 : 0;
 }
 
-static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len) // receive message over socket
-{
-	// declare message structure
-	struct iovec iov;
-	struct msghdr msg;
-	iov.iov_base = buf;
-	iov.iov_len = len;
-
-	// fill message using received buffer
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_name = sa;
-	msg.msg_namelen = sizeof(*sa);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-
-	return recvmsg(fd, &msg, 0);
-}
-
 static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t type)
 {
 	// parse information only when this is the desired interface
@@ -83,7 +65,7 @@ static int parse_ifa_msg(struct ifaddrmsg *ifa, void *buf, size_t len, uint8_t t
 	return f_err;
 }
 
-static uint32_t parse_nl_msg(void *buf, size_t len, uint8_t type)
+static uint32_t parse_nl_if_msg(void *buf, size_t len, uint8_t type)
 {
 	// only handle ERROR and NEW_ADDR message types
 	struct nlmsghdr *nl = NULL;
@@ -128,7 +110,7 @@ uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type)
 	do {
 		len = get_msg(&sa, buf, BUFLEN);
 		check(len);
-		nl_msg_type = parse_nl_msg(buf, len, type);
+		nl_msg_type = parse_nl_if_msg(buf, len, type);
 	} while (nl_msg_type != NLMSG_DONE && nl_msg_type != NLMSG_ERROR);
 
 	pthread_mutex_unlock(&lock);
@@ -137,7 +119,7 @@ uint32_t GetInterfaceIP(uint8_t *interface, uint8_t type)
 
 int InitializeIF()
 {
-	if(!fd) {  // create socket if it hasn't been made
+	if(!fd) {  // create socket
 		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 		check(fd); }
 	

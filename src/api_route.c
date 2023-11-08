@@ -1,6 +1,6 @@
 /*
 Andre Koka - Created 9/28/2023
-             Last Updated: 10/2/2023
+             Last Updated: 11/7/2023
 
 The basic API file for the MANET Testbed - to implement:
 - AddUnicastRoutingEntry - modify current routing table with new address (src, dest, gateway, interface)
@@ -67,25 +67,8 @@ static int form_request(struct sockaddr_nl *sa, int domain, uint32_t dest, uint3
 	return (r < 0) ? -1 : 0;
 }
 
-// receive message (through the msghdr format) over socket fd
-static int get_msg(struct sockaddr_nl *sa, void *buf, size_t len)
-{
-	struct iovec iov;
-	struct msghdr msg;
-	iov.iov_base = buf;
-	iov.iov_len = len;
-
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_name = sa;
-	msg.msg_namelen = sizeof(*sa);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-
-	return recvmsg(fd, &msg, 0);
-}
-
-// receive reply from kernel over netlink socket
-static uint32_t parse_nl_msg(void *buf, size_t len)
+// parse reply from kernel over netlink socket
+uint32_t parse_nl_route_msg(void *buf, size_t len)
 {
 	struct nlmsghdr *nl = NULL;
 	nl = (struct nlmsghdr*)buf;
@@ -113,7 +96,7 @@ int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop)
 	len = get_msg(&sa, buf, BUFLEN);
 	check(len);
 
-	nl_msg_type = parse_nl_msg(buf, len);
+	nl_msg_type = parse_nl_route_msg(buf, len);
 	if (nl_msg_type == NLMSG_ERROR) {
 		struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(buf);
 		switch (err->error) {
@@ -131,8 +114,8 @@ int AddUnicastRoutingEntry(uint32_t dest_address, uint32_t next_hop)
 int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 {
 	pthread_mutex_lock(&lock);
-	int len = 0;
 
+	int len = 0;
 	struct sockaddr_nl sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.nl_family = AF_NETLINK; // only supports ipv4
@@ -146,11 +129,11 @@ int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 	len = get_msg(&sa, buf, BUFLEN);
 	check(len);
 
-	nl_msg_type = parse_nl_msg(buf, len);
+	nl_msg_type = parse_nl_route_msg(buf, len);
 	if (nl_msg_type == NLMSG_ERROR) {
 		struct nlmsgerr *err = (struct nlmsgerr*)NLMSG_DATA(buf);
 		switch (err->error) {
-		case 0:
+		case 0: // indicates no error
 			break;
 		default: // any error in nlmsg goes here
 			f_err = 1;
@@ -161,7 +144,7 @@ int DeleteEntry(uint32_t dest_address, uint32_t next_hop)
 	return (f_err == 0) ? 0 : -1;
 }
 
-int InitializeRoute()
+int InitializeRoute() // currently unused
 {
 	//printf("route initialized\n");
 	return 0;
