@@ -93,30 +93,31 @@ The specific functionality available with this API and its structure are summari
 
 ## Functions
 All functions that are intended for the user are defined in `manet_testbed.h` and implemented across different source files:
-1) InitializeAPI() - In `api.c` - Must be called by the user before execution of the routing protocol begins. It performs initial setup of the testbed, including establishment of local ip addresses and iptables rules.
+1) **InitializeAPI()** - In `api.c` - Must be called by the user before execution of the routing protocol begins. It performs initial setup of the testbed, including establishment of local ip addresses and iptables rules.
 
-2) AddUnicastRoutingEntry() - In `api_route.c` - Adds a given destination as a unicast route to the main routing table of the current node. Uses Netlink and RTNetlink.
+2) **AddUnicastRoutingEntry()** - In `api_route.c` - Adds a given destination as a unicast route to the main routing table of the current node. Uses Netlink and RTNetlink.
 
-3) DeleteEntry() - In `api_route.c` - Deletes a given routing entry from the main routing table of the current node. Should only be used to delete routes that have been added by AddUnicastRoutingEntry(). Uses Netlink and RTNetlink.
+3) **DeleteEntry()** - In `api_route.c` - Deletes a given routing entry from the main routing table of the current node. Should only be used to delete routes that have been added by AddUnicastRoutingEntry(). Uses Netlink and RTNetlink.
 
 4) SwitchRoutingTable() - (UNUSED) - Intended to allow switching away from the main routing table and adding routes into a custom routing table.
 
-5) SendUnicast() - In `api_send.c` - Sends a message from one single node to another using UDP sockets. Should be used for Control Plane Messages only (messages that are unique to the routing protocol being tested).
+5) **SendUnicast()** - In `api_send.c` - Sends a message from one single node to another using UDP sockets. Should be used for Control Plane Messages only (messages that are unique to the routing protocol being tested).
 
-6) SendBroadcast() - In `api_send.c` - Broadcasts a message to the given network. Uses the broadcast address associated with the given node's "wlan0" interface.
+6) **SendBroadcast()** - In `api_send.c` - Broadcasts a message to the given network. Uses the broadcast address associated with the given node's "wlan0" interface.
 
-7) GetInterfaceIP() - In `api_if.c` - Gets the local and broadcast ipv4 addresses of the current node at the given interface. Note that the testbed only supports the use of "wlan0", even though this function can get the ip of any interface. Uses Netlink.
+7) **GetInterfaceIP()** - In `api_if.c` - Gets the local and broadcast ipv4 addresses of the current node at the given interface. Note that the testbed only supports the use of "wlan0", even though this function can get the ip of any interface. Uses Netlink.
 
 8) SetInterface() - (UNUSED) - Intended to set the interface that should be used by the testbed (and therefore the routing protocol). Currently, testbed only supports "wlan0".
 
 9) SearchTable() - (UNUSED) - Intended to search the main routing table to see if a certain entry is present.
 
-10) RegisterIncomingCallback() - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued incoming packets. Uses the `libnetfilter-queue` library.
+10) **RegisterIncomingCallback()** - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued incoming packets. Uses the `libnetfilter-queue` library.
 
-11) RegisterOutgoingCallback() - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued outgoing packets. Uses the `libnetfilter-queue` library.
+11) **RegisterOutgoingCallback()** - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued outgoing packets. Uses the `libnetfilter-queue` library.
 
-12) RegisterForwardCallback() - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued forwarded packets. Uses the `libnetfilter-queue` library.
+12) **RegisterForwardCallback()** - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued forwarded packets. Uses the `libnetfilter-queue` library.
 
+Specific API source files also have unique helper functions that are used to implement various required steps of the overall API functions. These functions can be found in the associated header file of the source file.
 
 ## Limitations
 - API does not support adding routes with specfici subnets
