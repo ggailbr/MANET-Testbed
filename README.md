@@ -3,7 +3,7 @@ An API that provides functions to implement a testbed for Mobile Ad-Hoc Network 
 
 Netlink is used to communicate between user and kernel-space on the Linux nodes, thus allowing for API development to take place without the need to develop a Kernel module. Then, libnetfilter-queue is used to work with Netfilter to queue packets of interest into user-space so that the testbed user can access packets, make a verdict on them (using a function unique to the routing protocol they want to test), and then allow the Kernel to take the appropriate action for the packet. 
 
-Further development on this API requires knowledge of Linux sockets, Netfilter, and Netlink. Documentation and examples for these tools can be limited. The `Examples\` directiory contains the best examples I could find, none of which are my own code. Otherwise, the best resource for Netfilter can be found at: https://www.netfilter.org/projects/libnetfilter_queue/
+Further development on this API requires knowledge of Linux sockets, Netfilter, and Netlink. Documentation and examples for these tools can be limited. The `Examples\` directory contains the best examples I could find, none of which are my own code. Otherwise, the best resource for Netfilter can be found at: https://www.netfilter.org/projects/libnetfilter_queue/
 
 This API is to be used as a dynamic library that is linked to a specific executable during compilation. In addition, the tools used within the library include Netlink, Netfilter, Broadcast UDP Sockets, and iptables, which all required sudo-permissons, leading to a specific required build process:
 
