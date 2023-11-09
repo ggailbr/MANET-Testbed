@@ -118,10 +118,16 @@ All functions that are intended for the user are defined in `manet_testbed.h` an
 12) RegisterForwardCallback() - In `api_queue.c` - Registers a function as the function used to decide the verdict of queued forwarded packets. Uses the `libnetfilter-queue` library.
 
 
-## Operation and Limitations
+## Limitations
+- API does not support adding routes with specfici subnets
+- API does not support multicast routes
+- API does not support using custom UDP headers
+- API only supports ipv4. There are no plans to support ipv6 communication
+- API only supports communication using default wireless interface on Raspberry PI, which is "wlan0"
 
 ## To-do
 Can also be found in the header comment of `api.h` and are work-in-progress items:
 1) Implement queue status capabilities - Currently there is no way to tell when a specific Netfilter Queue is full, and whether or not that is affecting the testbed performance.
 2) Implement queueing into different queues based on destination of the given packet
-3) Create destructor or CloseAPI() functions that closes all sockets, closes all queues, and clears all iptables rules upon closure of the testbed.
+3) Create destructor or CloseAPI() functions that closes all sockets, closes all queues, and clears all iptables rules upon closure of the testbed
+4) Impelment tracking and analysis statistics about the routing protocols being tested and provide them to the user
