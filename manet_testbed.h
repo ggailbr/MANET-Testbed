@@ -3,24 +3,11 @@
 
 /*
 Andre Koka - Created 10/2/2023
-             Last Updated: 11/7/2023
+             Last Updated: 11/9/2023
 
-Header file for MANET Testbed API. Includes:
-- global variables for socket, interface id, current routing table
-- definitions for custom netlink functions
-- function headers for functions available to users
+Header file for MANET Testbed API. Includes definitions for all global variables 
+and function that are visibile to the user (routing protocol tester)
 */
-
-// main things rn
-// - excess includes
-// - code cleanup and documentation
-// - queue thread ending too early
-// - counting packets in the queue
-// - packet length from nfqueue not correctly coming from nfq_get_payload
-// - dynamic library linking weirdness
-// - incoming/outgoing/forwarding logic - is it all correct?
-//          - look into queueing based on destination
-// - updating all header blocks
 
 #include <string.h>
 #include <stdio.h>

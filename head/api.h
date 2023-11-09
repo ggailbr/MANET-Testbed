@@ -3,13 +3,18 @@
 
 /*
 Andre Koka - Created 10/27/2023
-             Last Updated: 11/7/2023
+             Last Updated: 11/9/2023
 
 Internal header file for MANET Testbed. Includes:
-- global variables for socket, interface id, and mutex lock
+- global variables that are used between api source files
 - definitions for custom netlink functions
 - function headers for shared functions between api files
 */
+
+// Primary Issues
+// - counting packets in the queue
+// - incoming/outgoing/forwarding logic - is it all correct?
+//          - look into queueing based on destination
 
 #include <string.h>
 #include <stdio.h>
@@ -45,8 +50,6 @@ pthread_mutex_t lock; // providing thread safety
 
 void check(int val); // check for error
 char *ntop(int domain, void *buf); // convert ip to string
-
-// function definitions
 
 /**
  * \brief Helper function that receives a message over the current netlink socket, using
