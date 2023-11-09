@@ -1,5 +1,21 @@
 # MANET-Testbed
-An API that provides functions to implement a testbed for Mobile Ad-Hoc Network (MANET) routing protocols.
+An API that provides functions to implement a testbed for Mobile Ad-Hoc Network (MANET) routing protocols. This testbed is intended to be used with ad-hoc network nodes that are Raspberry PI devices running Linux Kernel 2.16.X or later. It uses built-in Linux Kernel modules Netlink and Netfilter to provide the user with ways to interact with the Linux Networking Stack without ever needing to know the specifics of routing tables, sockets, and Linux.
+
+Netlink is used to communicate between user and kernel-space on the Linux nodes, thus allowing for API development to take place without needed to develop a Kernel module. Then, libnetfilter-queue is used to work with Netfilter to queue packets of interest into user-space so that the testbed user can access packets, make a verdict on them (using a function unique to the routing protocol they want to test), and then allow the Kernel to take the appropriate action for the packet. 
+
+Further development on this API requires knowledge of Linux sockets, Netfilter, and Netlink. Documentation and examples for these tools can be limited. The `Examples\` directiory contains the best examples I could find, none of which are my own code. Otherwise, other resources can be found at: https://www.netfilter.org/projects/libnetfilter_queue/
+
+This API is to be used as a dynamic library that is linked to a specific executable during compilation. In addition, the tools used within the library include Netlink, Netfilter, Broadcast UDP Sockets, and iptables, which all required sudo-permissons, leading to a specific required build process:
+
+1) Implement a routing protocol (such as AODV) into a source file. As an example, let's assume it's called `prot.c`
+
+2) Use the testbed's `Makefile` and run `make` to build the testbed. The result should be a file called `libtestbed.so`.
+
+3) Compile and link the protocol by running `gcc -Wall prot.c -o prot.out -ltestbed -L<LIBPATH> -pthread -lnetfilter_queue`, where <LIBPATH> is replaced with the path to the folder which contains `libtestbed.so`. For example, `-home/pi/Documents/MANET-Testbed`.
+
+4) Run the executable as sudo-user by exporting the environment variable, once again replaceing <LIBPATH> with the appropriate path to the library: `sudo LD_LIBRARY_PATH=<LIBPATH>$LD_LIBRARY_PATH ./prot.out`
+
+The specific functionality available with this API and its structure are summarized below.
 
 ## File Structure
 ``` bash
