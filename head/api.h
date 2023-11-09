@@ -71,7 +71,7 @@ void check(int val);
 
 /**
  * \brief Simple function to convert an ipv4 address in uint32_t form to 
- * a null-terminated string form. Used only for debugging purposes
+ * a null-terminated string form. Used in api_send.c and for debugging
  * 
  * \return A character pointer to the string version of the ipv4 address
  * 
