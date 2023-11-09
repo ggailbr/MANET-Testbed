@@ -1,5 +1,6 @@
 /*
 	Simple udp client
+	- source unknown
 */
 #include<stdio.h>	//printf
 #include<string.h> //memset

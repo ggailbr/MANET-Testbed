@@ -125,6 +125,7 @@ Specific API source files also have unique helper functions that are used to imp
 - API does not support using custom UDP headers
 - API only supports ipv4. There are no plans to support ipv6 communication
 - API only supports communication using default wireless interface on Raspberry PI, which is "wlan0"
+- Requires every node in the MANET network to have a unique ID (statically defined ipv4 address)
 
 ## To-do
 Can also be found in the header comment of `api.h` and are work-in-progress items:

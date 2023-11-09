@@ -1,9 +1,6 @@
 /*
-Andre Koka - Created 5/31/2023
-             Last Updated: 6/2/2023
-
-             another blog code, for rtnetlink manipulation
-rtnetlink2
+can be found at:
+https://www.linuxjournal.com/article/8498
 */
 
 #include <string.h>

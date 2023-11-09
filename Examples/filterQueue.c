@@ -10,6 +10,9 @@
 //if the payload contain specific word or stream it's drop the packet
 //* Proxytype.blogspot.com *
 
+// can be downloaded at:
+// https://sourceforge.net/projects/libnetfilterqueuethreads/files/filterQueue.c/download
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
