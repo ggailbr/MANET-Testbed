@@ -66,7 +66,7 @@ The specific functionality available with this API and its structure are summari
 
 `src/` : Contains all source (.c) files that implement all functionality of the API.
 
-`api.c/h` : Used to declare variables and implement functions that are shared between API source files. 
+`api.c/h` : Used to declare variables and implement functions that are shared between API source files. <br/><br/>
   Implements: InitializeAPI()
 
 `api_if.c/h` : Implements all functions related to the wireless interfaces. Currently, testbed only supports ipv4 communication on interface "wlan0". 
