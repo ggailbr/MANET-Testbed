@@ -13,6 +13,10 @@ int in(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_
 {
 	printf("incoming!!");
 }
+int in2(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length)
+{
+	printf("incoming!! 2");
+}
 int out(uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length)
 {
 	printf("outgoing happening\n");
@@ -30,7 +34,7 @@ int main(void)
 	a = a + 0x02000000;
 	printf("%s\n", ntop(AF_INET, &a));
 
-	RegisterIncomingCallback(&in);
+	RegisterIncomingCallback(&in, &in2);
 	RegisterOutgoingCallback(&out);
 
 	while(1)

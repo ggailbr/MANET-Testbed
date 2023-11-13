@@ -126,7 +126,7 @@ int SearchTable(uint8_t *entry);
  * 
  * \return 0 for success, -1 for failure
  */
-uint32_t RegisterIncomingCallback(CallbackFunction cb);
+uint32_t RegisterIncomingCallback(CallbackFunction control_cb, CallbackFunction data_cb);
 
 /**
  * \brief Registers the provided function as callback function for handling queued outgoing packets, and

@@ -18,11 +18,13 @@
 typedef uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length); 
 
 // store registered callback functions from user
-CallbackFunction incoming;
+CallbackFunction incoming_control;
+CallbackFunction incoming_data;
 CallbackFunction outgoing;
 CallbackFunction forwarded;
 
-pthread_t in_thread; // to pull from incoming queue
+pthread_t in_thread_control; // to pull from incoming queue
+pthread_t in_thread_data;
 pthread_t out_thread; // to pull from outgoing queue
 pthread_t forward_thread; // to pull from forward queue
 
@@ -38,7 +40,7 @@ pthread_t forward_thread; // to pull from forward queue
 int InitializeQueue();
 
 /**
- * \brief Helper function to handle queued incoming packets. Called by nfq_handle_packet and used
+ * \brief Helper function to handle queued incoming control plane packets. Called by nfq_handle_packet and used
  * to call the user's incoming packet function with packet information. Function structure determined by
  * libnetfilter_queue standards for nfq_handle_packet(). Once registered as a callback function using 
  * nfq_create_queue, this function is never directly called in the API.
@@ -50,7 +52,23 @@ int InitializeQueue();
  * 
  * \return 0 for success, -1 for failure
 */
-int handle_incoming(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data);
+int handle_incoming_control(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data);
+
+/**
+ * \brief Helper function to handle queued incoming data plane packets. Called by nfq_handle_packet and used
+ * to call the user's incoming packet function with packet information. Function structure determined by
+ * libnetfilter_queue standards for nfq_handle_packet(). Once registered as a callback function using 
+ * nfq_create_queue, this function is never directly called in the API.
+ * 
+ * \param qh Queue handle for the queue that calls this function (passed automatically by nfq_handle_packet)
+ * \param nfmsg Pointer to a netfilter msg header (passed automatically by nfq_handle_packet)
+ * \param nfa Pointer to the data of the netfilter message, which is the packet (passed automatically by nfq_handle_packet)
+ * \param data Custom data passed by nfq_handle_packet (UNUSED)
+ * 
+ * \return 0 for success, -1 for failure
+*/
+int handle_incoming_data(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data);
+
 
 /**
  * \brief Helper function to handle queued outgoing packets. Called by nfq_handle_packet and used
