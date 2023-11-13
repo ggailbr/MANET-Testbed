@@ -341,7 +341,7 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 	pthread_mutex_lock(&lock);
 
 	// setup iptables rules (queue forwarded data plane messages)
-	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -J DROP");
+	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j DROP");
 	system("sudo /sbin/iptables -A FORWARD -j NFQUEUE --queue-num 2");
 
 	if(cb != NULL)
