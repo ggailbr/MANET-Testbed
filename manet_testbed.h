@@ -120,10 +120,12 @@ int SearchTable(uint8_t *entry);
  * \brief Registers the provided function as callback function for handling queued incoming packets, and
  *        begins queueing incoming packets
  * 
- * \param cb Pointer to the desired callback function, which should have the form:
+ * \param control_cb Pointer to the desired callback for control plane messages, which should have the form:
  *   *       - uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length);
  *           - function should return PACKET_ACCEPT or PACKET_DROP to indicate verdict
- * 
+  * \param data_cb Pointer to the desired callback for data plane messages, which should have the form:
+ *   *       - uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length);
+ *           - function should return PACKET_ACCEPT or PACKET_DROP to indicate verdict
  * \return 0 for success, -1 for failure
  */
 uint32_t RegisterIncomingCallback(CallbackFunction control_cb, CallbackFunction data_cb);

@@ -14,6 +14,7 @@
 #include <linux/ip.h> // for IP header
 
 #define QUEUE_LEN 100000
+// define queue numbers
 
 typedef uint8_t (*CallbackFunction) (uint8_t *raw_pack, uint32_t src, uint32_t dest, uint8_t *payload, uint32_t payload_length); 
 
@@ -23,8 +24,8 @@ CallbackFunction incoming_data;
 CallbackFunction outgoing;
 CallbackFunction forwarded;
 
-pthread_t in_thread_control; // to pull from incoming queue
-pthread_t in_thread_data;
+pthread_t in_thread_control; // to pull from incoming control plane queue
+pthread_t in_thread_data; // to pull from incoming data plane queue
 pthread_t out_thread; // to pull from outgoing queue
 pthread_t forward_thread; // to pull from forward queue
 
@@ -100,13 +101,20 @@ int handle_outgoing(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_
 */
 int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data);
 
-
 /**
- * \brief Helper function to pull packets from the incoming queue. It is used as the start function for the 
- * pthread_t thread that pulls from the queue of incoming packets
+ * \brief Helper function to pull packets from the incoming control plane queue. It is used as the start function for the 
+ * pthread_t thread that pulls from the queue of incoming control plane packets
  * 
 */
-void *thread_func_in();
+void *thread_func_in_control();
+
+
+/**
+ * \brief Helper function to pull packets from the incoming data plane queue. It is used as the start function for the 
+ * pthread_t thread that pulls from the queue of incoming data plane packets
+ * 
+*/
+void *thread_func_in_data();
 
 /**
  * \brief Helper function to pull packets from the outgoing queue. It is used as the start function for the 

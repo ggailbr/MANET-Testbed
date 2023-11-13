@@ -3,7 +3,7 @@ Andre Koka - Created 11/4/2023
              Last Updated: 11/7/2023
 
 The basic API file for the MANET Testbed - to implement:
-- RegisterIncomingCallback - queue incoming packets and handle with the given callback function
+- RegisterIncomingCallback - queue incoming packets and handle with the given callback functions (control and data planes separated)
 - RegisterOutgoingCallback - queue outgoing packets and handle with the given callback function
 - RegisterForwardCallback - queue forwarded packets and handle with the given callback function
 - InitializeQueue() - run iptables rules to enable ipv4 forwarding and disable ipv6
@@ -194,7 +194,7 @@ int handle_forwarded(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq
 		return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
 }
 
-void *thread_func_in()
+void *thread_func_in_control()
 {
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
@@ -241,7 +241,7 @@ void *thread_func_in()
 	return NULL;
 }
 
-void *thread_func_in2()
+void *thread_func_in_data()
 {
 	struct nfq_handle *h;
 	struct nfq_q_handle *qh;
@@ -389,15 +389,14 @@ uint32_t RegisterIncomingCallback(CallbackFunction control_cb, CallbackFunction 
 {
 	pthread_mutex_lock(&lock);
 
-	// setup iptables rules (queue incoming control plane messages)
+	// setup iptables rules (queue incoming control and data plane message separately)
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0");
 	system("sudo /sbin/iptables -A INPUT -m iprange --dst-range 192.168.1.1-192.168.1.100 -j NFQUEUE --queue-num 4");
-	// ^ change to queue incoming control and data planes separaetly
 
 	if(control_cb != NULL)
 	{
 		incoming_control = control_cb;
-		if(pthread_create(&in_thread_control, NULL, (void *)thread_func_in, NULL)) // create thread for incoming queue
+		if(pthread_create(&in_thread_control, NULL, (void *)thread_func_in_control, NULL))
 		{
 			printf("error creating incoming thread (data)\n");
 			return -1;
@@ -407,13 +406,12 @@ uint32_t RegisterIncomingCallback(CallbackFunction control_cb, CallbackFunction 
 	if(data_cb != NULL)
 	{
 		incoming_data = data_cb;
-		if(pthread_create(&in_thread_data, NULL, (void *)thread_func_in2, NULL)) // create thread for incoming queue
+		if(pthread_create(&in_thread_data, NULL, (void *)thread_func_in_data, NULL))
 		{
 			printf("error creating incoming thread (data)\n");
 			return -1;
 		}
 	}
-
 
 	pthread_mutex_unlock(&lock);
 	return 0;
