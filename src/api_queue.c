@@ -298,7 +298,7 @@ uint32_t RegisterIncomingCallback(CallbackFunction cb)
 
 	// setup iptables rules (queue incoming control plane messages)
 	system("sudo /sbin/iptables -A INPUT -p UDP --dport 269 -j NFQUEUE --queue-num 0");
-	// ^ may change to except all incming packets frm this netwrk, not just port 269 ones
+	// ^ change to queue incoming control and data planes separaetly
 
 	if(cb != NULL)
 		incoming = cb;
@@ -341,7 +341,8 @@ uint32_t RegisterForwardCallback(CallbackFunction cb)
 	pthread_mutex_lock(&lock);
 
 	// setup iptables rules (queue forwarded data plane messages)
-	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -j NFQUEUE --queue-num 2");
+	system("sudo /sbin/iptables -A FORWARD -p UDP --dport 269 -J DROP");
+	system("sudo /sbin/iptables -A FORWARD -j NFQUEUE --queue-num 2");
 
 	if(cb != NULL)
 		forwarded = cb;
